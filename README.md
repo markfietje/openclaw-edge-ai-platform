@@ -39,7 +39,7 @@ Monorepo for Mark's AI assistant infrastructure, including brain-server, signal-
 
 1. **Clone repository:**
    ```bash
-   git clone https://github.com/[USERNAME]/jetson-openclaw-setup.git
+   git clone https://github.com/markfietje/jetson-openclaw-setup.git
    cd jetson-openclaw-setup
    ```
 
@@ -63,12 +63,26 @@ Monorepo for Mark's AI assistant infrastructure, including brain-server, signal-
    sudo chmod +x /usr/local/bin/signal-gateway-wrapper.sh
    ```
 
-5. **Install systemd service:**
+5. **Install systemd services:**
    ```bash
+   # Install Signal Gateway service
    sudo cp services/openclaw-config/signal-gateway.service /etc/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable signal-gateway.service
    sudo systemctl start signal-gateway.service
+   
+   # Install Brain Server service
+   sudo cp services/openclaw-config/brain-server.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable brain-server.service
+   sudo systemctl start brain-server.service
+   
+   # Install periodic brain ingest service and timer
+   sudo cp services/openclaw-config/periodic-brain-ingest.service /etc/systemd/system/
+   sudo cp services/openclaw-config/periodic-brain-ingest.timer /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable periodic-brain-ingest.timer
+   sudo systemctl start periodic-brain-ingest.timer
    ```
 
 ## 📊 Current Status
@@ -149,7 +163,7 @@ Private repository - All rights reserved
 
 ## 👤 Author
 
-**Mark** - [GitHub](https://github.com/[USERNAME])
+**Mark** - [GitHub](https://github.com/markfietje)
 
 ---
 
