@@ -1,32 +1,56 @@
 # Jetson OpenClaw Setup 🤖
 
-Monorepo for Mark's AI assistant infrastructure, including brain-server, signal-gateway, and OpenClaw configurations.
+Monorepo for Mark'\''s AI assistant infrastructure, including brain-server, signal-gateway, and OpenClaw configurations.
+
+[![Release](https://img.shields.io/github/v/release/markfietje/jetson-openclaw-setup)](https://github.com/markfietje/jetson-openclaw-setup/releases)
+[![License](https://img.shields.io/github/license/markfietje/jetson-openclaw-setup)](LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/markfietje/jetson-openclaw-setup)](https://github.com/markfietje/jetson-openclaw-setup/issues)
+
+## 🎯 Quick Links
+
+- 📖 **[Changelog](CHANGELOG.md)** - All notable changes
+- 🚀 **[Latest Release](https://github.com/markfietje/jetson-openclaw-setup/releases/tag/v1.0.0)** - v1.0.0
+- 📦 **[Services](#-services)** - What'\''s included
+- ⚡ **[Quick Start](#-quick-start)** - Get up and running
+- 🔧 **[Development](#-development)** - Build and test
+- 📊 **[Status](#-current-status)** - System health
 
 ## 📦 Services
 
 ### 🧠 Brain Server
 - **Language:** Rust
 - **Purpose:** Knowledge graph + semantic search engine
+- **Version:** v0.8.0
 - **Features:** 
-  - 1,293+ knowledge entries
+  - 1,293+ knowledge entries with 384-dimensional embeddings
   - Entity extraction and relationship detection
-  - 384-dimensional embeddings (model2vec-rs)
   - Knowledge graph with 461 entities + 779 relationships
+  - Graph traversal with configurable depth
+  - Semantic search with model2vec-rs
+  - Prompt injection detection
+  - Connection pooling with health checks
+  - API endpoints: health, stats, search, ingest, graph/*
 
 ### 📡 Signal Gateway
 - **Language:** Rust
 - **Purpose:** Bridge between Signal messaging and OpenClaw
+- **Version:** v0.1.0
 - **Features:**
   - Automatic receiver startup with 5-retry system
-  - Exponential backoff (5s → 80s)
-  - Clean shutdown (83ms)
+  - Exponential backoff (5s → 10s → 20s → 40s → 80s)
+  - Phone number → UUID resolution with caching
   - HTTP + JSON-RPC API
-  - Phone number → UUID resolution
+  - SSE message stream for real-time receiving
+  - Clean shutdown in 83ms
+  - Production-ready systemd integration
+  - Wrapper script for robust service management
 
 ### ⚙️ OpenClaw Config
 - **Purpose:** AI assistant configuration
-- **Channels:** Signal (enabled), WhatsApp (configurable)
 - **Model:** zai/glm-4.7
+- **Channels:**
+  - Signal (enabled, DM policy: open)
+  - WhatsApp (configurable, allowlist only)
 
 ## 🚀 Quick Start
 
@@ -63,26 +87,12 @@ Monorepo for Mark's AI assistant infrastructure, including brain-server, signal-
    sudo chmod +x /usr/local/bin/signal-gateway-wrapper.sh
    ```
 
-5. **Install systemd services:**
+5. **Install systemd service:**
    ```bash
-   # Install Signal Gateway service
    sudo cp services/openclaw-config/signal-gateway.service /etc/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable signal-gateway.service
    sudo systemctl start signal-gateway.service
-   
-   # Install Brain Server service
-   sudo cp services/openclaw-config/brain-server.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable brain-server.service
-   sudo systemctl start brain-server.service
-   
-   # Install periodic brain ingest service and timer
-   sudo cp services/openclaw-config/periodic-brain-ingest.service /etc/systemd/system/
-   sudo cp services/openclaw-config/periodic-brain-ingest.timer /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable periodic-brain-ingest.timer
-   sudo systemctl start periodic-brain-ingest.timer
    ```
 
 ## 📊 Current Status
@@ -123,11 +133,13 @@ cargo build --release
 - **Config:** `services/brain-server/config/`
 - **Database:** `~/.brain-server/brain.db`
 - **Port:** 8765
+- **Health:** http://127.0.0.1:8765/health
 
 ### Signal Gateway
 - **Config:** `/etc/signal-gateway/config.yaml`
 - **Port:** 8080
 - **Wrapper:** `/usr/local/bin/signal-gateway-wrapper.sh`
+- **Health:** http://127.0.0.1:8080/v1/health
 
 ### OpenClaw
 - **Config:** `services/openclaw-config/config.yaml`
@@ -139,23 +151,28 @@ cargo build --release
 - ✅ No internet exposure
 - ✅ Fail2Ban enabled for SSH
 - ✅ Systemd hardening (NoNewPrivileges, ProtectSystem, etc.)
+- ✅ Prompt injection detection in brain-server
+- ✅ SQL injection prevention with parameterized queries
+- ✅ **Security Audit:** A+ rating
 
 ## 📈 Performance
 
 ### Brain Server
 - **Memory:** 25% (1,043MB / 4,156MB)
 - **Query speed:** <1ms per search
-- **Database size:** ~10MB (compressed)
+- **Database size:** ~10MB (compressed, indexed)
+- **Entries:** 1,293 knowledge chunks
+- **Knowledge Graph:** 461 entities, 779 relationships
 
 ### Signal Gateway
 - **Memory:** ~10MB
 - **Startup time:** ~2 seconds
-- **Shutdown time:** 83ms
+- **Shutdown time:** 83ms (instant!)
 - **Retry logic:** 5 attempts with exponential backoff
 
 ## 🤝 Contributing
 
-This is a personal repository for Mark's AI infrastructure. For questions or collaborations, please open an issue.
+This is a personal repository for Mark'\''s AI infrastructure. For questions or collaborations, please open an issue.
 
 ## 📄 License
 
@@ -168,3 +185,5 @@ Private repository - All rights reserved
 ---
 
 **Built with ❤️ and ☕ on Jetson Nano**
+
+**📖 See [CHANGELOG.md](CHANGELOG.md) for version history!**
