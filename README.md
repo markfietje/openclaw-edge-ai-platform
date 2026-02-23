@@ -22,7 +22,7 @@ Monorepo for Mark'\''s AI assistant infrastructure, including brain-server, sign
 - **Purpose:** Knowledge graph + semantic search engine
 - **Version:** v0.8.0
 - **Features:** 
-  - 1,293+ knowledge entries with 384-dimensional embeddings
+  - 1,293+ knowledge entries with 512-dimensional embeddings
   - Entity extraction and relationship detection
   - Knowledge graph with 461 entities + 779 relationships
   - Graph traversal with configurable depth
