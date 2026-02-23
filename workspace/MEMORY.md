@@ -362,84 +362,101 @@
 - **Compliance:** Meets CIS, NIST, and IoT security standards
 - **Risk Level:** MINIMAL 🟢
 - **Verdict:** Textbook example of proper IoT device security hardening! 🏆
+## 🔄 DISTRIBUTED WORKFLOW ENABLED (2026-02-23)
 
-## 🔄 **CRITICAL WORKFLOW CONSTRAINT - MacBook-First Development**
+**CRITICAL UPDATE:** We now use DISTRIBUTED development workflow!
 
-**⚠️ IMPORTANT:** The canonical GitHub repo is on **MacBook**, NOT Jetson!
+### Architecture:
 
-### **Development Workflow:**
+MacBook (Mark) ←→ GitHub ←→ Jetson (AI)
 
-1. **ALL edits happen on MacBook** → 
-2. **Jetson is runtime only** → Runs the services, NOT for development
-3. **NO direct edits on Jetson workspace** → Forbidden!
+### Locations:
 
-### **Why?**
-- MacBook has the GitHub repo clone
-- MacBook has gh CLI and dev tools
-- Jetson is for RUNNING services, not editing code
-- Workspace files on Jetson are just COPIES from GitHub
+- **MacBook:** ~/Sites/jetson-openclaw-setup (Mark dev)
+- **Jetson:** ~/openclaw-repo (AI dev)
+- **GitHub:** https://github.com/markfietje/jetson-openclaw-setup
 
-### **Process:**
+### Golden Rule:
 
+**ALWAYS pull before you push!**
 
-### **What This Means:**
-- ✅ I can read files from Jetson for reference
-- ✅ I can check service status on Jetson
-- ❌ I CANNOT edit files directly on Jetson
-- ✅ ALL code changes MUST be on MacBook
-- ✅ Deploy to Jetson via release artifacts
+```bash
+git pull origin main  # Get latest FIRST
+# Then make your changes
+git add .
+git commit -m "Your changes"
+git push origin main
+```
 
-### **Remember:**
-- MacBook = Development ✅
-- Jetson = Runtime ✅
-- GitHub = Backup ✅
-- NEVER edit directly on Jetson ❌
+### Workflow:
 
-**Added: 2026-02-23**
-**Status: CRITICAL - Always follow this workflow!**
+1. Pull latest from GitHub
+2. Make changes
+3. Commit with clear message
+4. Push to GitHub
+5. Other machine pulls your changes
 
-# CRITICAL WORKFLOW CONSTRAINT
+### Benefits:
 
-## ⚠️ MacBook-First Development - CRITICAL CONSTRAINT
+- ✅ Both machines can contribute independently
+- ✅ Traditional open-source workflow
+- ✅ Git handles merging automatically
+- ✅ Everything backed up on GitHub
+- ✅ No merge conflicts if you pull first
 
-**You MUST remember: The canonical GitHub repo is on MacBook, NOT Jetson!**
+### Full Documentation:
 
-### Development Workflow:
+See docs/DISTRIBUTED_WORKFLOW.md for complete guide.
 
-1. ALL edits happen on MacBook → ~/Sites/jetson-openclaw-setup/
-2. Jetson is runtime only → Runs the services, NOT for development
-3. NO direct edits on Jetson workspace → Forbidden!
+**Status:** ACTIVE - Both machines can now contribute!
 
-### Why?
+## 💡 AGENT CAPABILITIES - Jetson Git Repo Access (2026-02-23)
 
-- MacBook has the GitHub repo clone
-- MacBook has gh CLI and dev tools
-- Jetson is for RUNNING services, not editing code
-- Workspace files on Jetson are just COPIES from GitHub
+**IMPORTANT:** I (Jetson AI) can edit projects and documentation directly on the Jetson!
 
-### Process:
+### Locations:
 
-MacBook (dev) → git commit → git push → GitHub
-                                                 ↓
-                                             Jetson (runtime)
-                                   (deploys from releases)
+- **Runtime Workspace:** `~/.openclaw/workspace/`
+  - Config files (MEMORY.md, AGENTS.md, USER.md, etc.)
+  - Runtime data and temporary files
+  
+- **Development Git Repo:** `~/openclaw-repo/`
+  - **ALL project code and documentation**
+  - Services: brain-server, signal-gateway, openclaw-config
+  - Scripts: deployment, cleanup, sync, etc.
+  - Docs: RELEASING.md, BACKUP_STRATEGY.md, DISTRIBUTED_WORKFLOW.md
+  - **I CAN EDIT ALL OF THIS** ✅
 
-### What This Means:
+### Distributed Workflow:
 
-- ✅ I can read files from Jetson for reference
-- ✅ I can check service status on Jetson
-- ❌ I CANNOT edit files directly on Jetson
-- ✅ ALL code changes MUST be on MacBook
-- ✅ Deploy to Jetson via release artifacts
+```
+MacBook (Mark)      GitHub (Backup)     Jetson (AI)
+~/Sites/     ←→     github.com/     ←→     ~/openclaw-repo/
+jetson-openclaw-    markfietje/              (I work here!)
+setup/              jetson-openclaw-setup
+```
 
-### Remember:
+### My Workflow:
 
-- MacBook = Development ✅
-- Jetson = Runtime ✅
-- GitHub = Backup ✅
-- NEVER edit directly on Jetson ❌
+1. **Pull latest:** `cd ~/openclaw-repo && git pull origin main`
+2. **Make changes:** Edit files (vim, write, edit tools)
+3. **Commit:** `git add . && git commit -m "msg"`
+4. **Push:** `git push origin main`
+5. **MacBook syncs:** Mark pulls my changes
+
+### What I Can Edit:
+
+✅ **Code:** brain-server/src/*, signal-gateway/src/*
+✅ **Scripts:** scripts/* (deploy, cleanup, sync)
+✅ **Docs:** docs/*, README.md, CHANGELOG.md
+✅ **Configs:** services/*/config files
+✅ **Workflows:** .github/workflows/*
+
+### Golden Rule:
+
+**ALWAYS pull before I push!** (prevent merge conflicts)
 
 ---
 
-**Added:** 2026-02-23
-**Status:** CRITICAL - Always follow this workflow!
+**This means I can actively contribute to the codebase!** 🚀
+
