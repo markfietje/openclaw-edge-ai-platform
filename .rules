@@ -1,0 +1,138 @@
+# Jetson Development Rules
+# Connection command: ssh jetson@jetson
+# This allows SSH access to the Jetson Nano for development and deployment
+
+## Service Locations
+
+### Local Development (macOS)
+- Brain Server: ./services/brain-server/
+- Signal Gateway: ./services/signal-gateway/
+- Configs: ./services/openclaw-config/
+- Scripts: ./scripts/
+
+### Remote Deployment (Jetson)
+- Brain Server binary: /usr/local/bin/brain-server
+- Signal Gateway binary: /usr/local/bin/signal-gateway
+- Systemd services: /etc/systemd/system/
+- Configs: /etc/signal-gateway/
+
+## 🚀 GitHub Actions Auto-Deploy (RECOMMENDED) ⭐
+
+**Fastest workflow:** Just push to main, GitHub builds and deploys automatically!
+
+```bash
+git commit -m "feat: Amazing new feature"
+git push origin main
+# Done! GitHub builds ARM64 binaries and deploys to Jetson
+```
+
+**What happens automatically:**
+1. GitHub builds ARM64 binaries for both services
+2. Uploads to Jetson via SSH
+3. Restarts systemd services
+4. Runs health checks
+5. Reports deployment status in Actions tab
+
+**Manual trigger:** Go to Actions → Auto Deploy to Jetson → Run workflow
+
+**Setup required (one-time):**
+```bash
+# Generate SSH key for GitHub Actions
+ssh-keygen -t ed25519 -C "github-actions@jetson" -f ~/.ssh/github_actions_jetson
+
+# Copy public key to Jetson
+ssh-copy-id -i ~/.ssh/github_actions_jetson.pub jetson@jetson
+
+# Get known hosts entry
+ssh-keyscan jetson > ~/.ssh/jetson_known_hosts
+
+# Add secrets to GitHub: Settings → Secrets → Actions
+# JETSON_SSH_KEY = contents of ~/.ssh/github_actions_jetson
+# JETSON_SSH_KNOWN_HOSTS = contents of ~/.ssh/jetson_known_hosts
+```
+
+
+## 📦 Manual Deployment (Alternative)
+
+For local development or when GitHub Actions is unavailable.
+
+### Brain Server
+```bash
+# 1. Build locally (cross-compile for ARM64)
+cd services/brain-server
+cargo build --release --target aarch64-unknown-linux-gnu
+
+# 2. Sync to Jetson
+rsync -avz target/aarch64-unknown-linux-gnu/release/brain-server jetson@jetson:/home/jetson/brain-server/
+
+# 3. Restart service on Jetson
+ssh jetson@jetson "sudo systemctl restart brain-server"
+
+# 4. Check status
+ssh jetson@jetson "sudo systemctl status brain-server"
+```
+
+### Signal Gateway
+```bash
+# 1. Build locally (cross-compile for ARM64)
+cd services/signal-gateway
+cargo build --release --target aarch64-unknown-linux-gnu
+
+# 2. Sync to Jetson
+rsync -avz target/aarch64-unknown-linux-gnu/release/signal-gateway jetson@jetson:/home/jetson/signal-gateway/
+
+# 3. Sync wrapper script
+rsync -avz scripts/signal-gateway-wrapper.sh jetson@jetson:/home/jetson/signal-gateway-wrapper.sh
+ssh jetson@jetson "sudo cp /home/jetson/signal-gateway-wrapper.sh /usr/local/bin/ && sudo chmod +x /usr/local/bin/signal-gateway-wrapper.sh"
+
+# 4. Restart service on Jetson
+ssh jetson@jetson "sudo systemctl restart signal-gateway"
+
+# 5. Check status
+ssh jetson@jetson "sudo systemctl status signal-gateway"
+```
+
+### Full Sync (both services)
+```bash
+# Build both
+./scripts/build-all.sh
+
+# Sync both
+rsync -avz services/brain-server/target/aarch64-unknown-linux-gnu/release/brain-server jetson@jetson:/home/jetson/
+rsync -avz services/signal-gateway/target/aarch64-unknown-linux-gnu/release/signal-gateway jetson@jetson:/home/jetson/
+
+# Restart both services
+ssh jetson@jetson "sudo systemctl restart brain-server signal-gateway"
+```
+
+## Testing Endpoints
+
+### Brain Server (Jetson)
+- Health: ssh jetson@jetson "curl -s http://localhost:8765/health"
+- Stats: ssh jetson@jetson "curl -s http://localhost:8765/stats | jq ."
+- Search: ssh jetson@jetson "curl -s -X POST http://localhost:8765/search -H 'Content-Type: application/json' -d '{\"query\": \"test\", \"k\": 5}' | jq ."
+- Embeddings: ssh jetson@jetson "curl -s -X POST http://localhost:8765/v1/embeddings -H 'Content-Type: application/json' -d '{\"input\": \"test\"}' | jq '.data[0].embedding | length'"
+
+### Signal Gateway (Jetson)
+- Health: ssh jetson@jetson "curl -s http://localhost:8080/v1/health"
+- Status: ssh jetson@jetson "curl -s http://localhost:8080/v1/status | jq ."
+
+## Development Workflow
+
+### Automated (Recommended) ⭐
+1. Edit code locally in services/
+2. Test locally: `cargo test` and `cargo clippy`
+3. Commit and push: `git commit -m "feat: ..." && git push`
+4. GitHub automatically builds and deploys to Jetson
+5. Check deployment status in Actions tab
+6. Test via API endpoints
+7. Monitor logs: `ssh jetson@jetson "sudo journalctl -u brain-server -f"`
+
+### Manual (When needed)
+1. Edit code locally in services/
+2. Test locally if possible (or use cargo check)
+3. Build for ARM64 release: `cargo build --release --target aarch64-unknown-linux-gnu`
+4. Sync to Jetson via rsync
+5. Restart systemd service on Jetson
+6. Test via API endpoints
+7. Check logs: ssh jetson@jetson "sudo journalctl -u brain-server -f"
