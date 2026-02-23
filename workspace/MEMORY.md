@@ -362,3 +362,84 @@
 - **Compliance:** Meets CIS, NIST, and IoT security standards
 - **Risk Level:** MINIMAL 🟢
 - **Verdict:** Textbook example of proper IoT device security hardening! 🏆
+
+## 🔄 **CRITICAL WORKFLOW CONSTRAINT - MacBook-First Development**
+
+**⚠️ IMPORTANT:** The canonical GitHub repo is on **MacBook**, NOT Jetson!
+
+### **Development Workflow:**
+
+1. **ALL edits happen on MacBook** → 
+2. **Jetson is runtime only** → Runs the services, NOT for development
+3. **NO direct edits on Jetson workspace** → Forbidden!
+
+### **Why?**
+- MacBook has the GitHub repo clone
+- MacBook has gh CLI and dev tools
+- Jetson is for RUNNING services, not editing code
+- Workspace files on Jetson are just COPIES from GitHub
+
+### **Process:**
+
+
+### **What This Means:**
+- ✅ I can read files from Jetson for reference
+- ✅ I can check service status on Jetson
+- ❌ I CANNOT edit files directly on Jetson
+- ✅ ALL code changes MUST be on MacBook
+- ✅ Deploy to Jetson via release artifacts
+
+### **Remember:**
+- MacBook = Development ✅
+- Jetson = Runtime ✅
+- GitHub = Backup ✅
+- NEVER edit directly on Jetson ❌
+
+**Added: 2026-02-23**
+**Status: CRITICAL - Always follow this workflow!**
+
+# CRITICAL WORKFLOW CONSTRAINT
+
+## ⚠️ MacBook-First Development - CRITICAL CONSTRAINT
+
+**You MUST remember: The canonical GitHub repo is on MacBook, NOT Jetson!**
+
+### Development Workflow:
+
+1. ALL edits happen on MacBook → ~/Sites/jetson-openclaw-setup/
+2. Jetson is runtime only → Runs the services, NOT for development
+3. NO direct edits on Jetson workspace → Forbidden!
+
+### Why?
+
+- MacBook has the GitHub repo clone
+- MacBook has gh CLI and dev tools
+- Jetson is for RUNNING services, not editing code
+- Workspace files on Jetson are just COPIES from GitHub
+
+### Process:
+
+MacBook (dev) → git commit → git push → GitHub
+                                                 ↓
+                                             Jetson (runtime)
+                                   (deploys from releases)
+
+### What This Means:
+
+- ✅ I can read files from Jetson for reference
+- ✅ I can check service status on Jetson
+- ❌ I CANNOT edit files directly on Jetson
+- ✅ ALL code changes MUST be on MacBook
+- ✅ Deploy to Jetson via release artifacts
+
+### Remember:
+
+- MacBook = Development ✅
+- Jetson = Runtime ✅
+- GitHub = Backup ✅
+- NEVER edit directly on Jetson ❌
+
+---
+
+**Added:** 2026-02-23
+**Status:** CRITICAL - Always follow this workflow!
