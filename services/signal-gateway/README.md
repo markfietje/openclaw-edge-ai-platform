@@ -28,7 +28,7 @@ This codebase follows professional software engineering practices:
 | **Unit tests** | ✅ | 13 tests passing |
 | **Input validation** | ✅ | UUID, phone, message validation |
 | **Security patches** | ✅ | Latest reqwest (0.13.1) |
-| **Semantic versioning** | ✅ |遵循 semver 2.0.0 |
+| **Semantic versioning** | ✅ | Follows semver 2.0.0 |
 | **Conventional commits** | ✅ | Follows conventionalcommits.org |
 | **Changelog** | ✅ | Keep a Changelog format |
 
