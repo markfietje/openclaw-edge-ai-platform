@@ -34,5 +34,3 @@ pub const CORS_DEFAULT_ORIGINS: &str = "http://localhost:3000,http://localhost:8
 pub const CORS_DEFAULT_METHODS: &str = "GET,POST,PUT,DELETE,OPTIONS";
 pub const CORS_DEFAULT_HEADERS: &str = "content-type,authorization";
 pub const CORS_MAX_AGE_SECS: u64 = 3600;
-
-pub const SEARCH_BATCH_SIZE: usize = 500;

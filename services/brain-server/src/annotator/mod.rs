@@ -22,18 +22,12 @@ impl Annotator {
     /// Create a new annotator from configuration directory
     pub fn new(config_dir: impl Into<std::path::PathBuf>, enabled: bool) -> Result<Self> {
         let domains = Self::load_domains(config_dir.into())?;
-        Ok(Self {
-            domains: Arc::new(domains),
-            enabled,
-        })
+        Ok(Self { domains: Arc::new(domains), enabled })
     }
 
     /// Create a disabled annotator (for testing)
     pub fn disabled() -> Self {
-        Self {
-            domains: Arc::new(HashMap::new()),
-            enabled: false,
-        }
+        Self { domains: Arc::new(HashMap::new()), enabled: false }
     }
 
     /// Annotate content and return extracted entities/relationships
@@ -42,12 +36,9 @@ impl Annotator {
             return Vec::new();
         }
 
-        self.domains
-            .iter()
+        self.domains.iter()
             .flat_map(|(&domain, config)| {
-                crate::annotator::extractor::EntityExtractor::extract(
-                    content, title, config, domain,
-                )
+                crate::annotator::extractor::EntityExtractor::extract(content, title, config, domain)
             })
             .collect()
     }
@@ -58,9 +49,7 @@ impl Annotator {
     }
 
     /// Load all domain configurations from directory
-    fn load_domains(
-        config_dir: impl Into<std::path::PathBuf>,
-    ) -> Result<HashMap<KnowledgeDomain, DomainConfig>> {
+    fn load_domains(config_dir: impl Into<std::path::PathBuf>) -> Result<HashMap<KnowledgeDomain, DomainConfig>> {
         let config_dir = config_dir.into();
         const DOMAINS: &[(KnowledgeDomain, &str)] = &[
             (KnowledgeDomain::Business, "business.toml"),
@@ -84,10 +73,7 @@ impl Annotator {
         }
 
         if domains.is_empty() {
-            eprintln!(
-                "⚠️  No domain configurations loaded from {}",
-                config_dir.display()
-            );
+            eprintln!("⚠️  No domain configurations loaded from {}", config_dir.display());
         } else {
             println!("📚 Loaded {} domain configurations", domains.len());
         }

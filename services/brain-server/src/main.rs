@@ -4,7 +4,6 @@ use anyhow::{Context, Result};
 use axum::{
     body::{to_bytes, Body},
     extract::{Query, State, Path},
-    http::{header::HeaderName, Method},
     response::Json,
     routing::{get, post},
     Router,
@@ -23,10 +22,18 @@ use std::{
 use sysinfo::System;
 use tokio::{signal, task, time::{timeout, Duration}};
 use tower_http::cors::{Any, CorsLayer};
+use tracing::{info, warn};
 use xxhash_rust::xxh3::xxh3_64;
 
 mod annotator;
 mod config;
+
+use config::{
+    MODEL_ID, DEFAULT_K, MAX_K, SERVER_VERSION, SHUTDOWN_DRAIN_SECS,
+    MAX_REQUEST_SIZE, MAX_QUERY_LENGTH,
+};
+
+const SEARCH_BATCH_SIZE: usize = 500;
 
 type Pool = r2d2::Pool<SqliteConnectionManager>;
 
@@ -228,7 +235,7 @@ where
 }
 
 fn default_model() -> String {
-    config::MODEL_ID.to_string()
+    MODEL_ID.to_string()
 }
 
 #[derive(Deserialize)]
@@ -373,44 +380,22 @@ fn run_migration(db: &mut Connection) -> Result<()> {
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_rels_unique ON relationships(from_entity_id, to_entity_id, relation_type)",
         [],
     )?;
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_rels_type ON relationships(relation_type)",
-        [],
-    )?;
-
-    // Performance indexes
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_knowledge_created_at ON knowledge(created_at DESC)",
-        [],
-    )?;
 
     Ok(())
 }
 
 #[inline(always)]
 fn cosine_sim(a: &[f32], b: &[f32]) -> f32 {
-    let len = a.len().min(b.len());
-    if len == 0 {
+    if a.is_empty() || b.is_empty() {
         return 0.0;
     }
-
-    let mut dot = 0.0f32;
-    let mut norm_a = 0.0f32;
-    let mut norm_b = 0.0f32;
-
-    for i in 0..len {
-        let ai = a[i];
-        let bi = b[i];
-        dot += ai * bi;
-        norm_a += ai * ai;
-        norm_b += bi * bi;
-    }
-
-    let denom = (norm_a * norm_b).sqrt();
-    if denom == 0.0 {
+    let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
+    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if norm_a == 0.0 || norm_b == 0.0 {
         0.0
     } else {
-        dot / denom
+        dot / (norm_a * norm_b)
     }
 }
 
@@ -575,36 +560,39 @@ async fn add_chunk(State(s): State<Arc<AppState>>, Json(req): Json<AddRequest>) 
 }
 
 fn perform_search(pool: &Pool, model: &StaticModel, q: String, k: usize) -> Result<Vec<SearchResult>> {
-    let v = model.encode(std::slice::from_ref(&q)).into_iter().next().context("Query encoding failed")?;
+    let v = model.encode(&[q]).into_iter().next().context("Query encoding failed")?;
     let conn = pool.get().context("DB connection failed")?;
+    let total_count: i64 = conn.query_row("SELECT COUNT(*) FROM knowledge", [], |r| r.get(0))?;
 
     let mut results: Vec<SearchResult> = Vec::with_capacity(k * 2);
-    
-    // Optimized: Use a single query with ORDER BY for better performance
-    // Fetch in batches and calculate similarities
-    let mut stmt = conn.prepare(
-        "SELECT k.id, k.title, k.content, e.vector 
-         FROM knowledge k 
-         JOIN embeddings e ON k.id = e.knowledge_id"
-    )?;
+    let mut offset = 0;
 
-    let batch_results: Vec<_> = stmt
-        .query_map([], |row| {
-            let vec_str: String = row.get(3)?;
-            let db_vec: Vec<f32> = serde_json::from_str(&vec_str).unwrap_or_default();
-            Ok(SearchResult {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                content: row.get(2)?,
-                score: cosine_sim(&v, &db_vec),
-            })
-        })?
-        .filter_map(|r| r.ok())
-        .collect();
+    while offset < total_count as usize {
+        let mut stmt = conn.prepare(
+            "SELECT k.id, k.title, k.content, e.vector FROM knowledge k JOIN embeddings e ON k.id=e.knowledge_id LIMIT ? OFFSET ?"
+        )?;
 
-    results.extend(batch_results);
+        let batch_results: Vec<_> = stmt
+            .query_map(params![SEARCH_BATCH_SIZE as i64, offset as i64], |row| {
+                let vec_str: String = row.get(3)?;
+                let db_vec: Vec<f32> = serde_json::from_str(&vec_str).unwrap_or_default();
+                Ok(SearchResult {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    content: row.get(2)?,
+                    score: cosine_sim(&v, &db_vec),
+                })
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
 
-    // Sort and truncate - this is O(n log n) but necessary for top-k
+        results.extend(batch_results);
+        if results.len() >= k * 10 {
+            break;
+        }
+        offset += SEARCH_BATCH_SIZE;
+    }
+
     results.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)
@@ -622,18 +610,21 @@ async fn search(
     if q.is_empty() {
         return Json(serde_json::json!({ "success": false, "error": "Query cannot be empty" }));
     }
-    if q.len() > config::MAX_QUERY_LENGTH {
+    if q.len() > MAX_QUERY_LENGTH {
         return Json(serde_json::json!({ "success": false, "error": "Query too long" }));
     }
     if contains_suspicious_pattern(&q) {
         return Json(serde_json::json!({ "success": false, "error": "Input contains suspicious patterns" }));
     }
 
-    let k = p.k.unwrap_or(config::DEFAULT_K).min(config::MAX_K);
+    let k = p.k.unwrap_or(DEFAULT_K).min(MAX_K);
     let model = Arc::clone(&s.model);
     let pool = s.pool.clone();
 
-    let search_future = task::spawn_blocking(move || perform_search(&pool, &model, q, k));
+    let search_future = task::spawn_blocking(move || {
+        
+        perform_search(&pool, &model, q, k)
+    });
 
     match timeout(StdDuration::from_secs(8), search_future).await {
         Ok(Ok(Ok(results))) => Json(serde_json::json!({ "results": results })),
@@ -644,7 +635,7 @@ async fn search(
 }
 
 async fn ingest_memory(State(s): State<Arc<AppState>>, body: Body) -> Json<serde_json::Value> {
-    let content = match to_bytes(body, config::MAX_REQUEST_SIZE).await {
+    let content = match to_bytes(body, MAX_REQUEST_SIZE).await {
         Ok(b) => String::from_utf8(b.to_vec()).unwrap_or_default().trim().to_string(),
         Err(_) => String::new(),
     };
@@ -817,8 +808,8 @@ async fn health(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
     match timeout(StdDuration::from_secs(3), health_future).await {
         Ok(Ok(Ok((used_mb, total_mb, pool_state)))) => Json(serde_json::json!({
             "status": "ok",
-            "version": config::SERVER_VERSION,
-            "model": config::MODEL_ID,
+            "version": SERVER_VERSION,
+            "model": MODEL_ID,
             "system": {
                 "memory_used_mb": used_mb,
                 "memory_total_mb": total_mb,
@@ -830,7 +821,7 @@ async fn health(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
                 "busy_connections": pool_state.connections.saturating_sub(pool_state.idle_connections)
             }
         })),
-        _ => Json(serde_json::json!({ "status": "error", "version": config::SERVER_VERSION, "error": "Health check failed" })),
+        _ => Json(serde_json::json!({ "status": "error", "version": SERVER_VERSION, "error": "Health check failed" })),
     }
 }
 
@@ -856,7 +847,7 @@ async fn ready(State(s): State<Arc<AppState>>) -> impl axum::response::IntoRespo
 }
 
 async fn version() -> impl axum::response::IntoResponse {
-    config::SERVER_VERSION
+    SERVER_VERSION
 }
 
 async fn health_db(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
@@ -907,16 +898,16 @@ async fn stats(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
             "embeddings": embed_count,
             "entities": entities,
             "relationships": relationships,
-            "model": config::MODEL_ID,
-            "version": config::SERVER_VERSION
+            "model": MODEL_ID,
+            "version": SERVER_VERSION
         })),
         Ok(Ok(Err(e))) => Json(serde_json::json!({
             "count": 0,
             "embeddings": 0,
             "entities": 0,
             "relationships": 0,
-            "model": config::MODEL_ID,
-            "version": config::SERVER_VERSION,
+            "model": MODEL_ID,
+            "version": SERVER_VERSION,
             "error": e.to_string()
         })),
         Ok(Err(_)) => Json(serde_json::json!({
@@ -924,8 +915,8 @@ async fn stats(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
             "embeddings": 0,
             "entities": 0,
             "relationships": 0,
-            "model": config::MODEL_ID,
-            "version": config::SERVER_VERSION,
+            "model": MODEL_ID,
+            "version": SERVER_VERSION,
             "error": "Task join error"
         })),
         Err(_) => Json(serde_json::json!({
@@ -933,8 +924,8 @@ async fn stats(State(s): State<Arc<AppState>>) -> Json<serde_json::Value> {
             "embeddings": 0,
             "entities": 0,
             "relationships": 0,
-            "model": config::MODEL_ID,
-            "version": config::SERVER_VERSION,
+            "model": MODEL_ID,
+            "version": SERVER_VERSION,
             "error": "Request timed out"
         })),
     }
@@ -1074,63 +1065,6 @@ fn contains_suspicious_pattern(input: &str) -> bool {
     ];
     let lower = input.to_lowercase();
     suspicious.iter().any(|p| lower.contains(p))
-}
-
-fn build_cors_layer() -> CorsLayer {
-    let cors_origins = std::env::var("CORS_ORIGINS")
-        .unwrap_or_else(|_| "http://localhost:3000,http://localhost:8080".to_string());
-
-    let methods: Vec<Method> = std::env::var("CORS_METHODS")
-        .unwrap_or_else(|_| "GET,POST,PUT,DELETE,OPTIONS".to_string())
-        .split(',')
-        .filter_map(|m| m.trim().parse().ok())
-        .collect();
-
-    let headers: Vec<HeaderName> = std::env::var("CORS_HEADERS")
-        .unwrap_or_else(|_| "content-type,authorization".to_string())
-        .split(',')
-        .filter_map(|h| h.trim().parse().ok())
-        .collect();
-
-    let mut cors = CorsLayer::new();
-
-    if cors_origins.trim() == "*" {
-        cors = cors.allow_origin(Any);
-    } else {
-        let origins: Vec<axum::http::HeaderValue> = cors_origins
-            .split(',')
-            .filter_map(|origin| {
-                let trimmed = origin.trim();
-                if trimmed.is_empty() {
-                    None
-                } else {
-                    trimmed.parse().ok()
-                }
-            })
-            .collect();
-        
-        if origins.is_empty() {
-            cors = cors.allow_origin(Any);
-        } else {
-            cors = cors.allow_origin(origins);
-        }
-    }
-
-    if methods.is_empty() {
-        cors = cors.allow_methods(Any);
-    } else {
-        cors = cors.allow_methods(methods);
-    }
-
-    if headers.is_empty() {
-        cors = cors.allow_headers(Any);
-    } else {
-        cors = cors.allow_headers(headers);
-    }
-
-    cors
-        .allow_credentials(false)
-        .max_age(std::time::Duration::from_secs(3600))
 }
 
 async fn ingest_markdown(
@@ -1413,14 +1347,21 @@ async fn traverse_graph(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("🧠 Brain Server v{}", config::SERVER_VERSION);
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::from_default_env()
+                .add_directive(tracing::Level::INFO.into()),
+        )
+        .init();
+
+    info!("Starting Brain Server v{}", SERVER_VERSION);
 
     let home = dirs::home_dir().context("no home directory")?;
     let db_path = home.join(".openclaw/workspace/brain.db");
     if let Some(p) = db_path.parent() {
         std::fs::create_dir_all(p).ok();
     }
-    println!("📦 Database: {:?}", db_path);
+    info!("Database path: {:?}", db_path);
 
     let pool = r2d2::Pool::builder()
         .max_size(20)
@@ -1432,19 +1373,19 @@ async fn main() -> Result<()> {
         .build(SqliteConnectionManager::file(&db_path))?;
 
     run_migration(&mut *pool.get().context("migration failed")?)?;
-    println!("✅ Migration complete");
+    info!("Migration complete");
 
-    println!("🤖 Loading model: {}", config::MODEL_ID);
+    info!("Loading model: {}", MODEL_ID);
     let model = Arc::new(
-        StaticModel::from_pretrained(config::MODEL_ID, None, Some(true), None)
+        StaticModel::from_pretrained(MODEL_ID, None, Some(true), None)
             .map_err(|e| anyhow::anyhow!("Model load failed: {}", e))?,
     );
-    println!("✅ Model loaded");
+    info!("Model loaded");
 
     // Initialize connection leak detection
     let connection_tracker = std::sync::Arc::new(ConnectionTracker::new());
     spawn_connection_watchdog(std::sync::Arc::clone(&connection_tracker));
-    println!("🔍 Connection watchdog started (checks every 30s, warns after 300s)");
+    info!("Connection watchdog started");
 
     // Spawn pool health check to prevent connection timeouts
     let pool_for_health = pool.clone();
@@ -1454,28 +1395,31 @@ async fn main() -> Result<()> {
             interval.tick().await;
             if let Ok(conn) = pool_for_health.get() {
                 let _ = conn.query_row("SELECT 1", [], |_| Ok(()));
-                println!("💓 Pool health check: OK");
+                info!("Pool health check: OK");
             }
         }
     });
-    println!("💓 Pool health check started (pings DB every 30s)");
+    info!("Pool health check started");
 
     // Initialize rate limiter
     let rate_limiter = Arc::new(RateLimiter::new());
-    println!("⚡ Rate limiter initialized (100 req/min per IP)");
+    info!("Rate limiter initialized");
 
     // Initialize annotator
     let config_dir = dirs::home_dir()
         .unwrap()
         .join(".openclaw/workspace/.brain-domains");
     let annotator = annotator::Annotator::new(config_dir, true).unwrap_or_else(|e| {
-        eprintln!("⚠️ Failed to initialize annotator: {}", e);
-        eprintln!("📝 Continuing without annotation features");
+        warn!("Failed to initialize annotator: {}", e);
+        warn!("Continuing without annotation features");
         annotator::Annotator::disabled()
     });
-    println!("🧠 Annotator initialized ({} domains)", annotator.domain_count());
+    info!("Annotator initialized ({} domains)", annotator.domain_count());
 
-    let cors = build_cors_layer();
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     let app = Router::new()
         .route("/health", get(health))
@@ -1546,11 +1490,11 @@ async fn main() -> Result<()> {
             }
 
             println!("\n🛑 Initiating graceful shutdown...");
-            println!("⏳ Waiting up to {} seconds for in-flight requests to complete...", config::SHUTDOWN_DRAIN_SECS);
+            println!("⏳ Waiting up to {} seconds for in-flight requests to complete...", SHUTDOWN_DRAIN_SECS);
 
             let drain_start = std::time::Instant::now();
             let drain_complete = async {
-                tokio::time::sleep(Duration::from_secs(config::SHUTDOWN_DRAIN_SECS)).await;
+                tokio::time::sleep(Duration::from_secs(SHUTDOWN_DRAIN_SECS)).await;
                 false
             };
 
