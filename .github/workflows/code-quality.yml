@@ -93,7 +93,7 @@ jobs:
           find . -name "*.yaml" -o -name "*.yml" | while read file; do
             if [ -f "$file" ]; then
               echo "Checking $file..."
-              yamllint -d relaxed "$file" || {
+              yamllint "$file" || {
                 echo "❌ YAML validation failed for $file"
                 exit 1
               }
