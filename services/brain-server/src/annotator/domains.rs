@@ -11,7 +11,7 @@ use std::fs;
 use std::path::Path;
 
 /// Domain configuration loaded from TOML file
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DomainConfig {
     /// Domain metadata
     #[serde(default)]
