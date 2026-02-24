@@ -31,12 +31,14 @@ impl AppState {
         std::mem::forget(worker);
 
         // Create webhook client if configured
-        let webhook = config.webhook.as_ref().map(|webhook_config| Arc::new(WebhookClient::new(
-            webhook_config.url.clone(),
-            webhook_config.token.clone(),
-            webhook_config.retry_attempts,
-            webhook_config.retry_delay_ms,
-        )));
+        let webhook = config.webhook.as_ref().map(|webhook_config| {
+            Arc::new(WebhookClient::new(
+                webhook_config.url.clone(),
+                webhook_config.token.clone(),
+                webhook_config.retry_attempts,
+                webhook_config.retry_delay_ms,
+            ))
+        });
 
         // Start webhook forwarding task if webhook is configured
         let _webhook_task = if webhook.is_some() {
@@ -80,15 +82,9 @@ impl AppState {
                     if let Some(dm) = &msg.envelope.data_message {
                         if let Some(text) = &dm.message {
                             // Get sender info
-                            let sender_uuid = msg
-                                .envelope
-                                .source_uuid
-                                .as_deref()
-                                .unwrap_or("unknown");
-                            let account = msg
-                                .account
-                                .as_deref()
-                                .unwrap_or("unknown");
+                            let sender_uuid =
+                                msg.envelope.source_uuid.as_deref().unwrap_or("unknown");
+                            let account = msg.account.as_deref().unwrap_or("unknown");
 
                             tracing::info!("Forwarding message from {} to webhook", sender_uuid);
 
