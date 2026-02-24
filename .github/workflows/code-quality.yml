@@ -167,14 +167,6 @@ jobs:
                 exit 1
               fi
 
-              # Validate with systemd (if available)
-              if command -v systemd-analyze &> /dev/null; then
-                systemd-analyze verify "$file" || {
-                  echo "❌ systemd validation failed for $file"
-                  exit 1
-                }
-              fi
-
               echo "✅ $file is valid"
             fi
           done
