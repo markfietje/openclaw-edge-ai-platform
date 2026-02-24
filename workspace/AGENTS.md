@@ -34,3 +34,14 @@
 - Use brain-server for memory lookups
 - Context limit: 200K tokens
 - Session scope: per-sender
+
+## Brain Server Improvements
+
+### Agent 1: Security Fixes ✅ (2026-02-24)
+- **Branch:** `fix/security-cors-env-config`, Commit: de168a7
+
+### Agent 2: Dead Code Removal ✅ (2026-02-24)
+- **Branch:** `fix/dead-code`, Commit: bc94347
+
+### Agent 3: Performance Optimization ✅ (2026-02-24)
+- **Branch:** `perf/search-optimization`, Commit: a044d04
