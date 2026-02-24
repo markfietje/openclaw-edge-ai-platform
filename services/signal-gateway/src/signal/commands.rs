@@ -42,6 +42,7 @@ pub enum SignalCommand {
         reply: oneshot::Sender<()>,
     },
     /// Cache phone -> UUID mapping (from incoming messages)
+    #[allow(dead_code)]
     CacheRecipient {
         phone: String,
         uuid: String,

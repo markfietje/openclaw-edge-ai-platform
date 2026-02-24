@@ -73,6 +73,7 @@ struct JsonRpcError {
 
 #[derive(Debug, Deserialize)]
 struct SendMessageRequest {
+    #[allow(dead_code)]
     number: Option<String>,
     recipients: Vec<String>,
     message: String,
@@ -194,9 +195,8 @@ async fn send_message_v2(
     let recipient = body.recipients.first().map(|r| r.as_str()).unwrap_or("");
 
     // Handle UUID format (u:uuid) or direct UUID
-    let recipient = if recipient.starts_with("u:") {
-        // Extract UUID
-        &recipient[2..]
+    let recipient = if let Some(stripped) = recipient.strip_prefix("u:") {
+        stripped
     } else {
         recipient
     };
@@ -311,7 +311,7 @@ async fn handle_rpc_method(
 /// WebSocket receive endpoint - /v1/receive/{number}
 /// This is what OpenClaw uses for receiving messages!
 async fn receive_messages(
-    AxumState(state): AxumState<AppState>,
+    AxumState(_state): AxumState<AppState>,
     _path: Path<String>,
 ) -> impl IntoResponse {
     // For now, redirect to SSE stream

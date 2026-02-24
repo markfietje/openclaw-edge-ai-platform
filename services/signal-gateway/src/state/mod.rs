@@ -5,12 +5,13 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 
 use crate::config::Config;
-use crate::signal::{ManagerConfig, SignalHandle, SignalMessage, SignalWorker};
+use crate::signal::{ManagerConfig, SignalHandle, SignalWorker};
 use crate::webhook::WebhookClient;
 
 #[derive(Clone)]
 pub struct AppState {
     pub signal: SignalHandle,
+    #[allow(dead_code)]
     pub webhook: Option<Arc<WebhookClient>>,
     _webhook_task: Option<Arc<JoinHandle<()>>>,
 }
@@ -30,16 +31,12 @@ impl AppState {
         std::mem::forget(worker);
 
         // Create webhook client if configured
-        let webhook = if let Some(webhook_config) = &config.webhook {
-            Some(Arc::new(WebhookClient::new(
-                webhook_config.url.clone(),
-                webhook_config.token.clone(),
-                webhook_config.retry_attempts,
-                webhook_config.retry_delay_ms,
-            )))
-        } else {
-            None
-        };
+        let webhook = config.webhook.as_ref().map(|webhook_config| Arc::new(WebhookClient::new(
+            webhook_config.url.clone(),
+            webhook_config.token.clone(),
+            webhook_config.retry_attempts,
+            webhook_config.retry_delay_ms,
+        )));
 
         // Start webhook forwarding task if webhook is configured
         let _webhook_task = if webhook.is_some() {
@@ -86,13 +83,11 @@ impl AppState {
                             let sender_uuid = msg
                                 .envelope
                                 .source_uuid
-                                .as_ref()
-                                .map(|s| s.as_str())
+                                .as_deref()
                                 .unwrap_or("unknown");
                             let account = msg
                                 .account
-                                .as_ref()
-                                .map(|s| s.as_str())
+                                .as_deref()
                                 .unwrap_or("unknown");
 
                             tracing::info!("Forwarding message from {} to webhook", sender_uuid);

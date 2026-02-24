@@ -4,7 +4,6 @@
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -59,9 +58,9 @@ impl WebhookClient {
     pub async fn forward_message(
         &self,
         sender_phone: &str,
-        sender_uuid: &str,
+        _sender_uuid: &str,
         message_text: &str,
-        your_phone: &str,
+        _your_phone: &str,
     ) -> Result<()> {
         let payload = SignalWebhookPayload {
             message: format!("{} sent: {}", sender_phone, message_text),

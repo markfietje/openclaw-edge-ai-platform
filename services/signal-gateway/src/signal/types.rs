@@ -82,6 +82,7 @@ impl Default for ManagerConfig {
 }
 
 impl ManagerConfig {
+    #[allow(dead_code)]
     pub fn new(db_path: String, _attachments_dir: String) -> Self {
         Self {
             db_path,

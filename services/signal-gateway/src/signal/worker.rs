@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use futures_util::StreamExt;
 use parking_lot::Mutex;
 use presage::libsignal_service::content::ContentBody;
-use presage::libsignal_service::protocol::{Aci, ServiceId};
+use presage::libsignal_service::protocol::ServiceId;
 use presage::manager::{Manager, Registered};
 use presage::model::identity::OnNewIdentity;
 use presage::model::messages::Received;
@@ -48,6 +48,7 @@ impl RecipientCache {
     }
 
     /// Reverse lookup: get phone number from UUID
+    #[allow(dead_code)]
     pub fn reverse_get(&self, uuid: &str) -> Option<String> {
         let cache = self.cache.lock();
         for (key, value) in cache.iter() {
@@ -144,9 +145,12 @@ enum WorkerState {
 pub struct SignalHandle {
     command_tx: mpsc::Sender<SignalCommand>,
     message_tx: broadcast::Sender<SignalMessage>,
+    #[allow(dead_code)]
     account_number: Arc<Mutex<Option<String>>>,
     is_linked: Arc<AtomicBool>,
+    #[allow(dead_code)]
     receiver_running: Arc<AtomicBool>,
+    #[allow(dead_code)]
     shutdown_requested: Arc<AtomicBool>,
     send_rate_limiter: Arc<Semaphore>,
     command_timeout_ms: u64,
@@ -157,9 +161,11 @@ impl SignalHandle {
     pub fn is_linked(&self) -> bool {
         self.is_linked.load(Ordering::Acquire)
     }
+    #[allow(dead_code)]
     pub fn is_receiver_running(&self) -> bool {
         self.receiver_running.load(Ordering::Acquire)
     }
+    #[allow(dead_code)]
     pub fn account_number(&self) -> Option<String> {
         self.account_number.lock().clone()
     }
@@ -267,6 +273,7 @@ impl SignalHandle {
         tokio::time::timeout(Duration::from_millis(self.command_timeout_ms), rx).await??
     }
 
+    #[allow(dead_code)]
     pub async fn cache_recipient(&self, key: String, uuid: String) -> Result<()> {
         let (reply, rx) = oneshot::channel();
         self.command_tx
@@ -289,6 +296,7 @@ impl SignalHandle {
 }
 
 pub struct SignalWorker {
+    #[allow(dead_code)]
     thread_handle: Option<JoinHandle<()>>,
     handle: SignalHandle,
 }
@@ -345,6 +353,7 @@ impl SignalWorker {
         self.handle.clone()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn run_worker_thread(
         mut command_rx: mpsc::Receiver<SignalCommand>,
         message_tx: broadcast::Sender<SignalMessage>,
@@ -364,6 +373,7 @@ impl SignalWorker {
         std::fs::OpenOptions::new()
             .create(true)
             .write(true)
+            .truncate(true)
             .open(&config.db_path)
             .context("DB file")?;
         let store = rt.block_on(async {
@@ -396,6 +406,7 @@ impl SignalWorker {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn handle_command(
         cmd: SignalCommand,
         state: &mut WorkerState,
@@ -809,7 +820,7 @@ impl SignalWorker {
     fn process_content(
         content: &presage::libsignal_service::content::Content,
         account: Option<String>,
-        cache: &RecipientCache,
+        _cache: &RecipientCache,
     ) -> Option<SignalMessage> {
         use presage::libsignal_service::content::ContentBody;
 
@@ -872,7 +883,7 @@ impl SignalWorker {
             _ => return None,
         };
 
-        if text.is_none() || text.as_ref().map_or(true, |t| t.is_empty()) {
+        if text.is_none() || text.as_ref().is_none_or(|t| t.is_empty()) {
             return None;
         }
 
