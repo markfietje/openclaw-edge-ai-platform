@@ -267,7 +267,6 @@ impl std::fmt::Display for KnowledgeDomain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
     use tempfile::TempDir;
 
     #[test]
