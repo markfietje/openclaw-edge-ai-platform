@@ -49,6 +49,12 @@ pub struct ConnectionTracker {
     next_id: AtomicUsize,
 }
 
+impl Default for ConnectionTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConnectionTracker {
     pub fn new() -> Self {
         Self {
@@ -239,6 +245,7 @@ struct MarkdownPayload {
 }
 
 #[derive(Serialize)]
+#[allow(dead_code)]
 struct IngestResponse {
     success: bool,
     id: i64,
@@ -418,7 +425,7 @@ async fn add_chunk(State(s): State<Arc<AppState>>, Json(req): Json<AddRequest>) 
     let source = req.source;
 
     let add_future = task::spawn_blocking(move || {
-        let embedding = match model.encode(&[text.clone()]).into_iter().next() {
+        let embedding = match model.encode(std::slice::from_ref(&text)).into_iter().next() {
             Some(e) => e,
             None => {
                 return AddResponse {
@@ -615,8 +622,8 @@ async fn search(
     let pool = s.pool.clone();
 
     let search_future = task::spawn_blocking(move || {
-        let results = perform_search(&pool, &model, q, k);
-        results
+        
+        perform_search(&pool, &model, q, k)
     });
 
     match timeout(StdDuration::from_secs(8), search_future).await {
@@ -686,7 +693,7 @@ async fn ingest_memory(State(s): State<Arc<AppState>>, body: Body) -> Json<serde
                 continue;
             }
 
-            let embedding = match model.encode(&[text.clone()]).into_iter().next() {
+            let embedding = match model.encode(std::slice::from_ref(&text)).into_iter().next() {
                 Some(e) => e,
                 None => continue,
             };
