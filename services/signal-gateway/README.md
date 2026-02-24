@@ -16,6 +16,22 @@ A minimal, memory-efficient Signal gateway using [presage](https://github.com/wh
 
 ---
 
+## What's New in v0.1.1 (2026-02-24)
+
+### Security
+- Updated `reqwest` to 0.13.1 (security fix)
+- Added input validation for recipients (UUID, phone E.164, ACI formats)
+- Added input validation for messages (length, content)
+
+### Compatibility
+- Fixed OpenClaw camelCase field mapping for message fields
+
+### Code Quality
+- Zero clippy warnings (`cargo clippy -- -D warnings`)
+- Added comprehensive unit tests (13 tests passing)
+
+---
+
 ## What's New in v0.1.0 (2026-02-24)
 
 ### ✨ Features Added
@@ -103,7 +119,7 @@ Or open the URL: sgnl://linkdevice?uuid=xxxx&pub_key=yyyy
 
 ```bash
 curl http://localhost:8080/api/v1/check
-# {"status":"ok","version":"0.1.0"}
+# {"status":"ok","version":"0.1.1"}
 ```
 
 ---
