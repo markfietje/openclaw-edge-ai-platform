@@ -1,6 +1,6 @@
 # signal-gateway
 
-**Lightweight Rust-based Signal daemon for OpenClaw on Jetson Nano.**
+**Lightweight Rust-based Signal daemon for OpenClaw on Jetson Nano. v0.1.1**
 
 A minimal, memory-efficient Signal gateway using [presage](https://github.com/whisperfish/presage) - no Java required! This replaces `signal-cli` for resource-constrained devices.
 
@@ -301,11 +301,11 @@ openclaw channels status
 
 | OpenClaw Action | signal-gateway Endpoint |
 |-----------------|------------------------|
-| Send message | `POST /api/v1/rpc` method `sendMessage` |
+| Send message | `POST /v2/send` or `POST /api/v1/rpc` method `sendMessage` |
 | Receive messages | `GET /api/v1/events` (SSE stream) |
-| Get account info | `POST /api/v1/rpc` method `getAccountNumber` |
+| Get account info | `GET /v1/about` or `POST /api/v1/rpc` method `getAccountNumber` |
 | Typing indicator | `POST /api/v1/rpc` method `sendTyping` |
-| React to message | `POST /api/v1/rpc` method `sendReaction` |
+| React to message | `POST /api/vpc` method `sendReaction` |
 
 ---
 
@@ -381,6 +381,21 @@ sudo journalctl -u signal-gateway -f | grep -i webhook
 
 ## API Reference
 
+### HTTP Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/health` | Health check |
+| GET | `/v1/about` | Account info |
+| GET | `/api/v1/check` | Health check (alias) |
+| GET | `/api/v1/accounts` | List linked accounts |
+| GET | `/v1/accounts/{number}` | Get account details |
+| POST | `/v2/send` | Send message (simplified) |
+| POST | `/api/v1/rpc` | JSON-RPC 2.0 API |
+| POST | `/v1/cache/seed` | Seed phone→UUID cache |
+| GET | `/v1/receive/{number}` | WebSocket messages |
+| GET | `/api/v1/events` | SSE message stream |
+
 ### JSON-RPC 2.0 Endpoint
 
 All methods via `POST /api/v1/rpc`:
@@ -437,6 +452,53 @@ curl -X POST http://localhost:8080/api/v1/rpc \
   "id": 1
 }
 ```
+
+#### Send Message (v2/send - Simplified)
+
+```bash
+curl -X POST http://localhost:8080/v2/send \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "recipients": ["+15551234567"],
+    "message": "Hello from OpenClaw!"
+  }'
+```
+
+**Response:**
+```json
+{
+  "timestamp": 1708556400000,
+  "recipient": "+15551234567",
+  "message": "Sent successfully"
+}
+```
+
+**Note:** Recipients must be UUIDs (ACI). Use `/v1/cache/seed` to map phone numbers to UUIDs first.
+
+#### Seed Phone→UUID Cache
+
+To send messages to phone numbers, you need to cache the UUID first:
+
+```bash
+curl -X POST http://localhost:8080/v1/cache/seed \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "phone": "+15551234567",
+    "uuid": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "phone": "+15551234567",
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Cached successfully"
+}
+```
+
+Get the UUID from incoming messages in the SSE stream (`sourceUuid` field).
 
 #### Send Reaction
 
