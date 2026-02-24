@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated security audits with cargo-audit
 - Dependency tracking and weekly update checks
 
+### Fixed
+- **Signal Gateway field name mismatch** - Changed snake_case to camelCase for OpenClaw compatibility
+  - Fixed fields: `sourceNumber`, `sourceUuid`, `sourceDevice`, `dataMessage`, `groupInfo`, `contentType`, `groupId`, `groupName`
+  - Resolved issue where Signal messages were received but sessions not created
+  - Related: [openclaw/openclaw#24490](https://github.com/openclaw/openclaw/issues/24490)
+
 ---
 
 ## [1.0.0] - 2026-02-23
