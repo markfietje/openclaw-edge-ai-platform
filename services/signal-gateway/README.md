@@ -16,6 +16,35 @@ A minimal, memory-efficient Signal gateway using [presage](https://github.com/wh
 
 ---
 
+## What's New in v0.1.0 (2026-02-24)
+
+### ✨ Features Added
+
+- **Full Bi-Directional Messaging** - Send and receive Signal messages seamlessly
+- **Phone → UUID Cache System** - Automatic phone number to UUID resolution with caching
+- **Webhook Integration** - Forward incoming messages to OpenClaw in real-time
+- **HTTP API Endpoints**:
+  - `GET /v1/check` - Health check endpoint
+  - `POST /v1/rpc` - JSON-RPC 2.0 API for Signal operations
+  - `GET /v1/events` - Server-Sent Events for real-time message streaming
+  - `POST /v2/send` - Simplified message sending with phone number auto-resolution
+- **Systemd Service** - Auto-start on boot with automatic restart on failure
+- **Message Sending with Auto-Resolution** - Send messages using phone numbers, UUIDs automatically resolved from cache
+
+### 🐛 Bugs Fixed
+
+- Fixed phone → UUID resolution (now caches mappings for performance)
+- Fixed message sending for recipients with unknown UUIDs
+
+### 📚 Documentation
+
+- Complete API reference with examples
+- Webhook integration guide
+- Systemd service configuration
+- Troubleshooting guide
+
+---
+
 ## Quick Start
 
 ### 1. Build (first time takes 10-15 min on Jetson Nano)
@@ -207,6 +236,76 @@ openclaw channels status
 
 ---
 
+## Webhook Integration
+
+The signal-gateway can forward incoming Signal messages to OpenClaw via webhook, enabling real-time message processing.
+
+### Webhook Configuration
+
+Configure webhook in `/etc/signal-gateway/config.yaml`:
+
+```yaml
+webhook:
+  url: "http://127.0.0.1:18789/hooks/agent"
+  token: "signal-gateway-webhook-secret-2026"
+  retry_attempts: 3
+  retry_delay_ms: 1000
+```
+
+### Webhook Payload
+
+When a Signal message is received, the gateway forwards a JSON payload:
+
+```json
+{
+  "message": "+353833006868 sent: Hello from Signal!",
+  "name": "Signal",
+  "agent_id": "main",
+  "channel": "signal",
+  "to": "+353833006868",
+  "deliver": true,
+  "wake_mode": "now"
+}
+```
+
+### Features
+
+- **Automatic Forwarding**: All received messages are automatically forwarded to the webhook
+- **Retry Logic**: Failed deliveries are retried (configurable attempts)
+- **Bearing Authentication**: Secure webhook with Bearer token
+- **Message Formatting**: Sender phone number included in message text
+- **Wake Mode**: Supports immediate or next-heartbeat delivery
+
+### Testing Webhook
+
+Manually test webhook delivery:
+
+```bash
+# Test if webhook endpoint is accessible
+curl -X POST http://127.0.0.1:18789/hooks/agent \
+  -H "Authorization: Bearer signal-gateway-webhook-secret-2026" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Test message",
+    "name": "Test",
+    "agent_id": "main",
+    "channel": "test",
+    "to": "+1234567890",
+    "deliver": true,
+    "wake_mode": "now"
+  }'
+```
+
+### Monitoring Webhook
+
+Check signal-gateway logs for webhook activity:
+
+```bash
+sudo journalctl -u signal-gateway -f | grep -i webhook
+```
+
+---
+
 ## API Reference
 
 ### JSON-RPC 2.0 Endpoint
@@ -391,6 +490,24 @@ signal:
   data_dir: "./data"
   # Directory for attachment storage
   attachments_dir: "./data/attachments"
+  # Command channel buffer size
+  command_channel_capacity: 64
+  # Message broadcast buffer size
+  message_broadcast_capacity: 256
+  # Command timeout in milliseconds
+  command_timeout_ms: 120000
+  # Maximum messages per second (rate limiting)
+  max_sends_per_second: 5
+
+webhook:
+  # OpenClaw webhook endpoint URL
+  url: "http://127.0.0.1:18789/hooks/agent"
+  # Webhook authentication token
+  token: "your-webhook-token-here"
+  # Number of retry attempts for failed deliveries
+  retry_attempts: 3
+  # Delay between retries in milliseconds
+  retry_delay_ms: 1000
 ```
 
 ---
