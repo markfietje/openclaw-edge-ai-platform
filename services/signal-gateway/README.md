@@ -87,6 +87,8 @@ YAML
 
 ### 3. Link Your Phone
 
+This connects your Signal account to the gateway. The gateway acts as a "linked device" like a tablet or computer.
+
 ```bash
 ./target/release/signal-gateway link --device-name "OpenClaw"
 ```
@@ -100,11 +102,66 @@ sgnl://linkdevice?uuid=xxxx&pub_key=yyyy
 Or open the URL: sgnl://linkdevice?uuid=xxxx&pub_key=yyyy
 ```
 
-**To complete linking:**
-1. Open Signal on your phone
-2. Go to **Settings → Linked Devices**
+#### Option A: Link via QR Code (Easiest)
+
+1. **On your phone**, open the Signal app
+2. Go to **Settings** (profile icon) → **Linked Devices**
 3. Tap **+** or "Link new device"
-4. Scan the QR code OR manually enter the URL
+4. Tap **"Scan code"**
+5. **On your computer/Jetson**, display the QR code:
+   ```bash
+   # The link command outputs a QR code - you may need to capture it differently
+   # For text-based systems, use the URL directly
+   ```
+6. Point your phone camera at the QR code
+7. Signal will confirm - tap "Link"
+
+#### Option B: Link via URL (Alternative)
+
+1. **On your phone**, open Signal
+2. Go to **Settings** → **Linked Devices** → **+** → **"Enter code instead"**
+3. Copy the UUID from the link URL (the part after `uuid=`)
+4. Enter the UUID when prompted
+
+#### Verify Linking Success
+
+Once linked, the gateway will:
+- Store your Signal identity in `data/signal.db`
+- Show your linked phone number when queried
+
+```bash
+# Check if linked
+curl http://localhost:8080/v1/about
+
+# Or via RPC
+curl -X POST http://localhost:8080/api/v1/rpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"getAccountNumber","params":{},"id":1}'
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {"number": "+1234567890"},
+  "id": 1
+}
+```
+
+#### Troubleshooting Linking
+
+| Issue | Solution |
+|-------|----------|
+| QR code won't display | Use the URL option instead |
+| Linking times out | The URL expires in ~2 minutes - generate a new one |
+| "Already linked" error | Device already linked to another account |
+| Can't find linked devices | Signal Settings → Linked Devices |
+
+#### Important Notes
+
+- **Backup `data/signal.db`** - Contains your Signal identity keys
+- If you lose this file, you'll need to re-link
+- You can link multiple devices to the same Signal account
 
 ### 4. Start the Server
 
