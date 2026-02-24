@@ -1,4 +1,4 @@
-//! Brain Server v0.8.0
+//! Brain Server v0.8.1
 
 use anyhow::{Context, Result};
 use axum::{
@@ -22,20 +22,20 @@ use std::{
 use sysinfo::System;
 use tokio::{signal, task, time::{timeout, Duration}};
 use tower_http::cors::{Any, CorsLayer};
+use tracing::{info, warn};
 use xxhash_rust::xxh3::xxh3_64;
 
 mod annotator;
+mod config;
+
+use config::{
+    MODEL_ID, DEFAULT_K, MAX_K, SERVER_VERSION, SHUTDOWN_DRAIN_SECS,
+    MAX_REQUEST_SIZE, MAX_QUERY_LENGTH,
+};
+
+const SEARCH_BATCH_SIZE: usize = 500;
 
 type Pool = r2d2::Pool<SqliteConnectionManager>;
-
-const MODEL_ID: &str = "minishlab/potion-retrieval-32M";
-const DEFAULT_K: usize = 5;
-const MAX_K: usize = 100;
-const SERVER_VERSION: &str = "0.8.0";
-const SHUTDOWN_DRAIN_SECS: u64 = 60;
-const MAX_REQUEST_SIZE: usize = 1024 * 1024;
-const MAX_QUERY_LENGTH: usize = 2000;
-const SEARCH_BATCH_SIZE: usize = 500;
 
 #[derive(Debug, Clone)]
 pub struct ConnectionInfo {
@@ -47,6 +47,12 @@ pub struct ConnectionInfo {
 pub struct ConnectionTracker {
     connections: Mutex<HashMap<usize, ConnectionInfo>>,
     next_id: AtomicUsize,
+}
+
+impl Default for ConnectionTracker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConnectionTracker {
@@ -239,6 +245,7 @@ struct MarkdownPayload {
 }
 
 #[derive(Serialize)]
+#[allow(dead_code)]
 struct IngestResponse {
     success: bool,
     id: i64,
@@ -418,7 +425,7 @@ async fn add_chunk(State(s): State<Arc<AppState>>, Json(req): Json<AddRequest>) 
     let source = req.source;
 
     let add_future = task::spawn_blocking(move || {
-        let embedding = match model.encode(&[text.clone()]).into_iter().next() {
+        let embedding = match model.encode(std::slice::from_ref(&text)).into_iter().next() {
             Some(e) => e,
             None => {
                 return AddResponse {
@@ -615,8 +622,8 @@ async fn search(
     let pool = s.pool.clone();
 
     let search_future = task::spawn_blocking(move || {
-        let results = perform_search(&pool, &model, q, k);
-        results
+        
+        perform_search(&pool, &model, q, k)
     });
 
     match timeout(StdDuration::from_secs(8), search_future).await {
@@ -686,7 +693,7 @@ async fn ingest_memory(State(s): State<Arc<AppState>>, body: Body) -> Json<serde
                 continue;
             }
 
-            let embedding = match model.encode(&[text.clone()]).into_iter().next() {
+            let embedding = match model.encode(std::slice::from_ref(&text)).into_iter().next() {
                 Some(e) => e,
                 None => continue,
             };
@@ -1340,14 +1347,21 @@ async fn traverse_graph(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("🧠 Brain Server v{}", SERVER_VERSION);
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::from_default_env()
+                .add_directive(tracing::Level::INFO.into()),
+        )
+        .init();
+
+    info!("Starting Brain Server v{}", SERVER_VERSION);
 
     let home = dirs::home_dir().context("no home directory")?;
     let db_path = home.join(".openclaw/workspace/brain.db");
     if let Some(p) = db_path.parent() {
         std::fs::create_dir_all(p).ok();
     }
-    println!("📦 Database: {:?}", db_path);
+    info!("Database path: {:?}", db_path);
 
     let pool = r2d2::Pool::builder()
         .max_size(20)
@@ -1359,19 +1373,19 @@ async fn main() -> Result<()> {
         .build(SqliteConnectionManager::file(&db_path))?;
 
     run_migration(&mut *pool.get().context("migration failed")?)?;
-    println!("✅ Migration complete");
+    info!("Migration complete");
 
-    println!("🤖 Loading model: {}", MODEL_ID);
+    info!("Loading model: {}", MODEL_ID);
     let model = Arc::new(
         StaticModel::from_pretrained(MODEL_ID, None, Some(true), None)
             .map_err(|e| anyhow::anyhow!("Model load failed: {}", e))?,
     );
-    println!("✅ Model loaded");
+    info!("Model loaded");
 
     // Initialize connection leak detection
     let connection_tracker = std::sync::Arc::new(ConnectionTracker::new());
     spawn_connection_watchdog(std::sync::Arc::clone(&connection_tracker));
-    println!("🔍 Connection watchdog started (checks every 30s, warns after 300s)");
+    info!("Connection watchdog started");
 
     // Spawn pool health check to prevent connection timeouts
     let pool_for_health = pool.clone();
@@ -1381,26 +1395,26 @@ async fn main() -> Result<()> {
             interval.tick().await;
             if let Ok(conn) = pool_for_health.get() {
                 let _ = conn.query_row("SELECT 1", [], |_| Ok(()));
-                println!("💓 Pool health check: OK");
+                info!("Pool health check: OK");
             }
         }
     });
-    println!("💓 Pool health check started (pings DB every 30s)");
+    info!("Pool health check started");
 
     // Initialize rate limiter
     let rate_limiter = Arc::new(RateLimiter::new());
-    println!("⚡ Rate limiter initialized (100 req/min per IP)");
+    info!("Rate limiter initialized");
 
     // Initialize annotator
     let config_dir = dirs::home_dir()
         .unwrap()
         .join(".openclaw/workspace/.brain-domains");
     let annotator = annotator::Annotator::new(config_dir, true).unwrap_or_else(|e| {
-        eprintln!("⚠️ Failed to initialize annotator: {}", e);
-        eprintln!("📝 Continuing without annotation features");
+        warn!("Failed to initialize annotator: {}", e);
+        warn!("Continuing without annotation features");
         annotator::Annotator::disabled()
     });
-    println!("🧠 Annotator initialized ({} domains)", annotator.domain_count());
+    info!("Annotator initialized ({} domains)", annotator.domain_count());
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

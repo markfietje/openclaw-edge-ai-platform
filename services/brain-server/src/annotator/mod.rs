@@ -10,7 +10,6 @@ use anyhow::Result;
 use std::{collections::HashMap, sync::Arc};
 
 pub use domains::{DomainConfig, KnowledgeDomain};
-pub use extractor::EntityExtractor;
 
 /// Main annotator engine
 #[derive(Clone)]
@@ -22,7 +21,7 @@ pub struct Annotator {
 impl Annotator {
     /// Create a new annotator from configuration directory
     pub fn new(config_dir: impl Into<std::path::PathBuf>, enabled: bool) -> Result<Self> {
-        let domains = Self::load_domains(&config_dir.into())?;
+        let domains = Self::load_domains(config_dir.into())?;
         Ok(Self { domains: Arc::new(domains), enabled })
     }
 
