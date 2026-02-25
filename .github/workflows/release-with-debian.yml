@@ -3,7 +3,7 @@ name: Release with Debian Packages (Enterprise-Grade)
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -86,6 +86,18 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install C compiler and build tools
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y build-essential
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            # macOS should have cc available, but ensure Xcode tools are installed
+            if ! command -v cc &> /dev/null; then
+              xcode-select --install || true
+            fi
+          fi
 
       - name: Test brain-server
         working-directory: services/brain-server
@@ -449,7 +461,8 @@ jobs:
   create-github-release:
     name: Create GitHub Release
     runs-on: apple-container
-    needs: [validate-tag, generate-changelog, build-binaries, build-debian-packages]
+    needs:
+      [validate-tag, generate-changelog, build-binaries, build-debian-packages]
     if: always() && needs.build-debian-packages.result == 'success'
 
     steps:
