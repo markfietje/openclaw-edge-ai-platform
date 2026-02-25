@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Upload outdated report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.service }}-outdated-deps
           path: /tmp/outdated.*
@@ -173,7 +173,7 @@ jobs:
           fi
 
       - name: Upload audit report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.service }}-security-audit
           path: /tmp/audit.json
