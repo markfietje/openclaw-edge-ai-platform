@@ -10,7 +10,7 @@ Enterprise-grade CI/CD pipeline for the Jetson AI infrastructure.
 - **Triggers**: Push/PR to main/dev, changes in brain-server or workflow
 - **Checks**:
   - Code formatting (rustfmt)
-  - Linting (clippy with -D warnings)
+  - Linting (clippy with 0 warnings)
   - Unit tests with coverage reporting (tarpaulin)
   - Security audit (cargo-audit) - **FAILS on critical/high vulnerabilities**
   - Documentation completeness - **FAILS on missing docs**
