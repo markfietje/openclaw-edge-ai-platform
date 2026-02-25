@@ -166,13 +166,23 @@ async fn seed_cache(
     // Validate phone number
     let phone = match validate_phone(&body.phone) {
         Ok(p) => p,
-        Err(e) => return (axum::http::StatusCode::BAD_REQUEST, Json(json!({ "error": e }))),
+        Err(e) => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({ "error": e })),
+            )
+        }
     };
 
     // Validate UUID
     let uuid = match validate_recipient(&body.uuid) {
         Ok(u) => u,
-        Err(e) => return (axum::http::StatusCode::BAD_REQUEST, Json(json!({ "error": format!("Invalid UUID: {}", e) }))),
+        Err(e) => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({ "error": format!("Invalid UUID: {}", e) })),
+            )
+        }
     };
 
     // Insert into cache
@@ -180,7 +190,12 @@ async fn seed_cache(
     cache.insert(phone.clone(), uuid.clone());
     tracing::info!("Cached: {} -> {}", phone, uuid);
 
-    (axum::http::StatusCode::OK, Json(json!({ "status": "ok", "phone": phone, "uuid": uuid, "message": "Cached successfully" })))
+    (
+        axum::http::StatusCode::OK,
+        Json(
+            json!({ "status": "ok", "phone": phone, "uuid": uuid, "message": "Cached successfully" }),
+        ),
+    )
 }
 
 /// Send message - v2 API (OpenClaw uses this)
@@ -190,25 +205,46 @@ async fn send_message_v2(
     Json(body): Json<SendMessageRequest>,
 ) -> impl IntoResponse {
     // Validate recipient
-    let recipient_opt = body.recipients.first().and_then(|r| validate_recipient(r).ok());
+    let recipient_opt = body
+        .recipients
+        .first()
+        .and_then(|r| validate_recipient(r).ok());
     let recipient = match recipient_opt {
         Some(r) => r,
-        None => return (axum::http::StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid recipient format" }))),
+        None => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Invalid recipient format" })),
+            )
+        }
     };
 
     // Validate message
     let message = match validate_message(&body.message) {
         Ok(m) => m,
-        Err(e) => return (axum::http::StatusCode::BAD_REQUEST, Json(json!({ "error": e }))),
+        Err(e) => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({ "error": e })),
+            )
+        }
     };
 
     tracing::info!("Sending message to: {}", recipient);
 
     match state.signal.send_message(&recipient, &message).await {
-        Ok(_id) => (axum::http::StatusCode::OK, Json(json!({ "timestamp": chrono::Utc::now().timestamp_millis(), "recipient": recipient, "message": "Sent successfully" }))),
+        Ok(_id) => (
+            axum::http::StatusCode::OK,
+            Json(
+                json!({ "timestamp": chrono::Utc::now().timestamp_millis(), "recipient": recipient, "message": "Sent successfully" }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Send failed: {}", e);
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })))
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": e.to_string() })),
+            )
         }
     }
 }
