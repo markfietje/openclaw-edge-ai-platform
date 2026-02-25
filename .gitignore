@@ -23,6 +23,11 @@ workspace/.openclaw/sessions/
 workspace/.openclaw/*.key
 workspace/.openclaw/*.token
 workspace/.openclaw/*.secret
+docs/
+.openclaw/
+.openclaw-*
+workspace/
+openclaw*
 
 # Secrets
 *.key
@@ -31,6 +36,8 @@ workspace/.openclaw/*.secret
 *.pem
 id_rsa*
 known_hosts
+.rules
+
 
 # Logs
 *.log
