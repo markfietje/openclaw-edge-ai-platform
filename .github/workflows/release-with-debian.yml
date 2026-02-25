@@ -89,14 +89,40 @@ jobs:
 
       - name: Install C compiler and build tools
         run: |
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            sudo apt-get update
-            sudo apt-get install -y build-essential
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            # macOS should have cc available, but ensure Xcode tools are installed
-            if ! command -v cc &> /dev/null; then
-              xcode-select --install || true
+          # Check if C compiler is already available
+          if command -v cc &> /dev/null || command -v gcc &> /dev/null; then
+            echo "✅ C compiler already available"
+            cc --version || gcc --version
+          else
+            echo "⚠️ C compiler not found, attempting installation..."
+
+            if [[ "$RUNNER_OS" == "Linux" ]]; then
+              # Try without sudo first (for containerized runners)
+              if apt-get update &> /dev/null && apt-get install -y build-essential &> /dev/null; then
+                echo "✅ Installed build-essential without sudo"
+              elif command -v sudo &> /dev/null; then
+                # Fall back to sudo if available
+                sudo apt-get update
+                sudo apt-get install -y build-essential
+                echo "✅ Installed build-essential with sudo"
+              else
+                echo "::error::Cannot install build-essential: sudo not available and direct installation failed"
+                exit 1
+              fi
+            elif [[ "$RUNNER_OS" == "macOS" ]]; then
+              # macOS - try to install Xcode command line tools
+              if xcode-select --install 2>&1 | grep -q "already installed"; then
+                echo "✅ Xcode tools already installed"
+              else
+                echo "::warning::Xcode tools installation may require manual intervention"
+              fi
             fi
+          fi
+
+          # Verify C compiler is now available
+          if ! command -v cc &> /dev/null && ! command -v gcc &> /dev/null; then
+            echo "::error::C compiler installation failed"
+            exit 1
           fi
 
       - name: Test brain-server
