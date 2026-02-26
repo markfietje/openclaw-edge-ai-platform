@@ -307,7 +307,7 @@ jobs:
 
           echo "📦 Installing Debian packaging tools inside Linux container..."
           apt-get update -qq
-          apt-get install -y -qq dpkg-dev fakeroot
+          apt-get install -y -qq dpkg-dev fakeroot libssl3
 
           echo "🏗️ Building ${SERVICE}_${VERSION}_${ARCH}.deb..."
           cd /workspace/packages/${SERVICE}
