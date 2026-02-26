@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [0.8.5] - 2026-02-26
+
+### Infrastructure
+- Fixed debian control file - added Version field for dpkg-deb compatibility
+- Save deb packages to Jetson instead of auto-deploying
+
+---
+
 ## [0.8.4] - 2026-02-26
 
 ### Infrastructure
