@@ -513,231 +513,26 @@ jobs:
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Backup current deployment
-        run: |
-          BACKUP_DIR="/tmp/backup_$(date +%Y%m%d_%H%M%S)"
-
-          echo "Creating backup at ${BACKUP_DIR}..."
-
-          ssh ${JETSON_USER}@${JETSON_HOST} "
-            mkdir -p ${BACKUP_DIR}
-
-            # Backup binaries
-            if [ -f /usr/local/bin/brain-server ]; then
-              cp /usr/local/bin/brain-server ${BACKUP_DIR}/
-            fi
-
-            if [ -f /usr/local/bin/signal-gateway ]; then
-              cp /usr/local/bin/signal-gateway ${BACKUP_DIR}/
-            fi
-
-            # Backup configs
-            if [ -d /etc/brain-server ]; then
-              cp -r /etc/brain-server ${BACKUP_DIR}/
-            fi
-
-            if [ -d /etc/signal-gateway ]; then
-              cp -r /etc/signal-gateway ${BACKUP_DIR}/
-            fi
-
-            echo 'Backup created: ${BACKUP_DIR}'
-            ls -lh ${BACKUP_DIR}
-          "
-
-      - name: Deploy brain-server
+      - name: Save .deb packages to Jetson
         env:
           SSH_KEY: ${{ secrets.JETSON_SSH_KEY }}
         run: |
           VERSION="${{ needs.validate-tag.outputs.version }}"
 
-          echo "🚀 Deploying brain-server v${VERSION} (ARM64) to Jetson Nano..."
+          echo "📦 Saving .deb packages to Jetson..."
 
-          # Copy .deb package to Jetson
+          # Create packages directory on Jetson
+          ssh ${JETSON_USER}@${JETSON_HOST} "mkdir -p ~/deb-packages"
+
+          # Copy .deb packages to Jetson
           scp /tmp/debian-packages/brain-server_${VERSION}_arm64.deb \
-            ${JETSON_USER}@${JETSON_HOST}:/tmp/
+            ${JETSON_USER}@${JETSON_HOST}:~/deb-packages/
 
-          # Install package
-          ssh ${JETSON_USER}@${JETSON_HOST} "
-            sudo systemctl stop brain-server || true
+          scp /tmp/debian-packages/signal-gateway_${VERSION}_arm64.deb \
+            ${JETSON_USER}@${JETSON_HOST}:~/deb-packages/
 
-            sudo dpkg -i /tmp/brain-server_${VERSION}_arm64.deb || {
-              echo 'Installation failed, attempting rollback...'
-              sudo dpkg --configure -a
-              exit 1
-            }
-
-            sudo systemctl daemon-reload
-            sudo systemctl start brain-server
-
-            # Wait for service to start
-            sleep 3
-
-            # Verify service is running
-            if sudo systemctl is-active --quiet brain-server; then
-              echo '✅ brain-server is running'
-            else
-              echo '::error::brain-server failed to start'
-              sudo journalctl -u brain-server -n 50
-              exit 1
-            fi
-          "
-
-          echo "✅ brain-server deployed successfully"
-
-      - name: Deploy signal-gateway
-        env:
-          SSH_KEY: ${{ secrets.JETSON_SSH_KEY }}
-        run: |
-          VERSION="${{ needs.validate-tag.outputs.version }}"
-
-          echo "🚀 Deploying signal-gateway v0.1.1 (ARM64) to Jetson Nano..."
-
-          # Copy .deb package to Jetson
-          scp /tmp/debian-packages/signal-gateway_0.1.1_arm64.deb \
-            ${JETSON_USER}@${JETSON_HOST}:/tmp/
-
-          # Install package
-          ssh ${JETSON_USER}@${JETSON_HOST} "
-            sudo systemctl stop signal-gateway || true
-
-            sudo dpkg -i /tmp/signal-gateway_0.1.1_arm64.deb || {
-              echo 'Installation failed, attempting rollback...'
-              sudo dpkg --configure -a
-              exit 1
-            }
-
-            sudo systemctl daemon-reload
-            sudo systemctl start signal-gateway
-
-            # Wait for service to start
-            sleep 5
-
-            # Verify service is running
-            if sudo systemctl is-active --quiet signal-gateway; then
-              echo '✅ signal-gateway is running'
-            else
-              echo '::error::signal-gateway failed to start'
-              sudo journalctl -u signal-gateway -n 50
-              exit 1
-            fi
-          "
-
-          echo "✅ signal-gateway deployed successfully"
-
-      - name: Verify deployment
-        env:
-          SSH_KEY: ${{ secrets.JETSON_SSH_KEY }}
-        run: |
-          echo "🔍 Running comprehensive deployment verification..."
-
-          ssh ${JETSON_USER}@${JETSON_HOST} "
-            set -e
-
-            echo ''
-            echo '═══════════════════════════════════════════════════════'
-            echo '  Deployment Verification'
-            echo '═══════════════════════════════════════════════════════'
-            echo ''
-
-            # Check brain-server
-            echo '🔍 Brain Server:'
-            if sudo systemctl is-active --quiet brain-server; then
-              echo '  ✅ Service: Running'
-
-              # Test health endpoint
-              HEALTH=\$(curl -s http://localhost:8765/health)
-              if [ \"\$HEALTH\" = 'OK' ]; then
-                echo '  ✅ Health: OK'
-              else
-                echo '  ⚠️  Health: '\$HEALTH
-              fi
-
-              # Show version
-              if [ -f /usr/local/bin/brain-server ]; then
-                echo '  ✅ Binary: Installed'
-              fi
-            else
-              echo '  ❌ Service: Not running'
-              exit 1
-            fi
-
-            echo ''
-
-            # Check signal-gateway
-            echo '🔍 Signal Gateway:'
-            if sudo systemctl is-active --quiet signal-gateway; then
-              echo '  ✅ Service: Running'
-
-              # Test health endpoint
-              HEALTH=\$(curl -s http://localhost:8080/v1/health)
-              if echo \"\$HEALTH\" | grep -q 'healthy'; then
-                echo '  ✅ Health: OK'
-              else
-                echo '  ⚠️  Health: '\$HEALTH
-              fi
-
-              # Show version
-              if [ -f /usr/local/bin/signal-gateway ]; then
-                echo '  ✅ Binary: Installed'
-              fi
-            else
-              echo '  ❌ Service: Not running'
-              exit 1
-            fi
-
-            echo ''
-            echo '✅ All services verified successfully'
-          "
-
-      - name: Rollback on failure
-        if: failure()
-        env:
-          SSH_KEY: ${{ secrets.JETSON_SSH_KEY }}
-        run: |
-          echo "⚠️  Deployment failed, initiating rollback..."
-
-          ssh ${JETSON_USER}@${JETSON_HOST} "
-            # Find the most recent backup
-            BACKUP_DIR=\$(ls -dt /tmp/backup_* 2>/dev/null | head -1)
-
-            if [ -z \"\$BACKUP_DIR\" ]; then
-              echo 'No backup found, cannot rollback'
-              exit 1
-            fi
-
-            echo 'Restoring from backup: '\$BACKUP_DIR
-
-            # Stop services
-            sudo systemctl stop brain-server signal-gateway || true
-
-            # Restore binaries
-            if [ -f \"\$BACKUP_DIR/brain-server\" ]; then
-              sudo cp \"\$BACKUP_DIR/brain-server\" /usr/local/bin/
-              echo 'Restored brain-server binary'
-            fi
-
-            if [ -f \"\$BACKUP_DIR/signal-gateway\" ]; then
-              sudo cp \"\$BACKUP_DIR/signal-gateway\" /usr/local/bin/
-              echo 'Restored signal-gateway binary'
-            fi
-
-            # Restore configs
-            if [ -d \"\$BACKUP_DIR/brain-server\" ]; then
-              sudo cp -r \"\$BACKUP_DIR/brain-server\" /etc/
-              echo 'Restored brain-server config'
-            fi
-
-            if [ -d \"\$BACKUP_DIR/signal-gateway\" ]; then
-              sudo cp -r \"\$BACKUP_DIR/signal-gateway\" /etc/
-              echo 'Restored signal-gateway config'
-            fi
-
-            # Restart services
-            sudo systemctl daemon-reload
-            sudo systemctl start brain-server signal-gateway || true
-
-            echo '✅ Rollback completed'
-          "
+          echo "✅ .deb packages saved to Jetson"
+          ssh ${JETSON_USER}@${JETSON_HOST} "ls -lh ~/deb-packages/"
 
       - name: Cleanup
         if: always()
