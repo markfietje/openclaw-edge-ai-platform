@@ -155,6 +155,7 @@ jobs:
           # Run build inside ARM64 Linux container
           /usr/local/bin/container run --rm \
             --platform ${{ matrix.platform }} \
+            -m 4g \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w "/workspace/services/${{ matrix.service }}" \
             rust:latest \
@@ -178,6 +179,7 @@ jobs:
           /usr/local/bin/container run --rm \
             --platform ${{ matrix.platform }} \
             --rosetta \
+            -m 4g \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w "/workspace/services/${{ matrix.service }}" \
             rust:latest \
