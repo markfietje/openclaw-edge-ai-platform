@@ -232,47 +232,6 @@ cargo clippy -- -D warnings
 
 ---
 
-## 🚢 Deployment
-
-### Automated Release
-
-Push a tag to trigger the multi-architecture release:
-
-```bash
-git tag v0.9.0
-git push origin v0.9.0
-```
-
-The workflow will:
-1. ✅ Run tests and validation
-2. 📝 Generate comprehensive changelog
-3. 🏗️ Build ARM64 and AMD64 binaries
-4. 📦 Create Debian packages for both architectures
-5. 🚀 Deploy to GitHub Releases
-6. 🎯 Deploy to Jetson Nano (ARM64, automatic)
-
-### Manual Deployment
-
-**For ARM64 devices:**
-```bash
-# Copy package to device
-scp brain-server_0.8.1_arm64.deb user@device:/tmp/
-
-# Install on device
-ssh user@device "sudo dpkg -i /tmp/brain-server_0.8.1_arm64.deb"
-```
-
-**For AMD64 servers:**
-```bash
-# Copy package to server
-scp brain-server_0.8.1_amd64.deb user@server:/tmp/
-
-# Install on server
-ssh user@server "sudo dpkg -i /tmp/brain-server_0.8.1_amd64.deb"
-```
-
----
-
 ## 🤝 Contributing
 
 Contributions welcome! Here's how:
