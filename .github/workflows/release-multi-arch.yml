@@ -225,6 +225,7 @@ jobs:
             -w "/workspace/services/${{ matrix.service }}" \
             rust:latest \
             bash -c "
+              apt-get update -qq && apt-get install -y -qq protobuf-compiler &&
               cargo build --release --target ${{ matrix.target }} &&
               if [ ! -f 'target/${{ matrix.target }}/release/${{ matrix.service }}' ]; then
                 echo '::error::Binary not found after build';
