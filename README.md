@@ -4,7 +4,7 @@
 
 [![Release](https://img.shields.io/github/v/release/markfietje/jetson-openclaw-setup?style=for-the-badge&logo=github)](https://github.com/markfietje/jetson-openclaw-setup/releases)
 [![License](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-blue?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-ARM64%20%26%20AMD64-9cf?style=for-the-badge&logo=linux)](https://github.com/markfietje/jetson-openclaw-setup/releases)
+[![Platform](https://img.shields.io/badge/platform-ARM64-9cf?style=for-the-badge&logo=linux)](https://github.com/markfietje/jetson-openclaw-setup/releases)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
 
 **Production-ready AI assistant infrastructure for Ubuntu/Debian Linux**
@@ -24,7 +24,7 @@ OpenClaw AI Assistant Infrastructure provides a solid, well-built monorepo for d
 - 📡 **Signal Gateway** - Signal ↔ OpenClaw bridge with auto-retry
 - 📦 **Debian Packages** - Easy installation via .deb packages
 - 🔒 **Security Hardened** - Systemd isolation, CORS protection, input validation
-- 🚀 **Multi-Architecture** - Native support for ARM64 and AMD64
+- 🚀 **ARM64 Optimized** - Built for edge AI devices (Jetson Nano, Raspberry Pi)
 
 ---
 
@@ -45,14 +45,14 @@ Works on any ARM64 Linux system:
 | **AWS Graviton** | ARM64 Neoverse | ✅ Compatible |
 | **Other ARM64 Linux** | ARM64 | ✅ Should work |
 
-### AMD64 (x86_64)
-Works on any 64-bit Linux system:
+### AMD64 (x86_64) - Build from Source
+Pre-built packages not provided. Build from source for other architectures:
 
-| Platform | Architecture | Status |
-|----------|--------------|--------|
-| **Ubuntu Desktop/Server** | AMD64 x86_64 | ✅ Tested |
-| **Debian** | AMD64 x86_64 | ✅ Compatible |
-| **Other Linux** | AMD64 x86_64 | ✅ Should work |
+```bash
+git clone https://github.com/markfietje/jetson-openclaw-setup.git
+cd jetson-openclaw-setup/services/brain-server
+cargo build --release
+```
 
 ---
 
@@ -87,22 +87,13 @@ Works on any 64-bit Linux system:
 
 ### Prerequisites
 
-- **Hardware:** Any ARM64 or AMD64 Linux system
+- **Hardware:** ARM64 Linux system (Jetson Nano, Raspberry Pi, etc.)
 - **Software:** Ubuntu/Debian, systemd
-- **Architecture:** Choose based on your platform
 
 ### Installation
 
-**Step 1: Choose your architecture**
+**Download and install:**
 
-| Platform | Architecture | Download |
-|----------|--------------|----------|
-| Jetson Nano, Raspberry Pi 4/5 | ARM64 | `_arm64.deb` |
-| Regular Linux PC/Server | AMD64 | `_amd64.deb` |
-
-**Step 2: Download and install**
-
-**For ARM64 (Jetson Nano, Raspberry Pi, etc.):**
 ```bash
 # Download latest ARM64 packages
 wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/download/brain-server_0.8.1_arm64.deb
@@ -111,19 +102,6 @@ wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/downloa
 # Install packages
 sudo dpkg -i brain-server_0.8.1_arm64.deb
 sudo dpkg -i signal-gateway_0.1.1_arm64.deb
-
-# Services auto-start and enable
-```
-
-**For AMD64 (Regular Linux):**
-```bash
-# Download latest AMD64 packages
-wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/download/brain-server_0.8.1_amd64.deb
-wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/download/signal-gateway_0.1.1_amd64.deb
-
-# Install packages
-sudo dpkg -i brain-server_0.8.1_amd64.deb
-sudo dpkg -i signal-gateway_0.1.1_amd64.deb
 
 # Services auto-start and enable
 ```
