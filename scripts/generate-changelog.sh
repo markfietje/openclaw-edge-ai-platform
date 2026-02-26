@@ -75,15 +75,12 @@ extract_changelog_section() {
     local changelog=$2
 
     # Find the line number of the version header
-    local start_line=$(grep -n "^\[${version}\]" "$changelog" | head -1 | cut -d: -f1)
+    local start_line=$(grep -n "##\s*\[${version}\]" "$changelog" | head -1 | cut -d: -f1)
 
     if [ -z "$start_line" ]; then
         log_warn "Version ${version} not found in CHANGELOG.md"
         return 1
     fi
-
-    # Adjust to include the ## before the version
-    start_line=$((start_line - 1))
 
     # Find the next version header (or end of relevant section)
     local end_line=$(awk "NR > ${start_line} && /^##\s+\[/ {print NR; exit}" "$changelog")
