@@ -30,20 +30,15 @@ OpenClaw AI Assistant Infrastructure provides a solid, well-built monorepo for d
 
 ## 🎯 Supported Platforms
 
-### ARM64 (64-bit ARM)
-Works on any ARM64 Linux system:
+### ARM64 (Recommended)
+Pre-built packages for edge AI devices:
 
-| Platform | Architecture | Status |
-|----------|--------------|--------|
-| **NVIDIA Jetson Nano** | ARM64 Cortex-A57 | ✅ Tested |
-| **NVIDIA Jetson Xavier NX** | ARM64 Carmel | ✅ Compatible |
-| **NVIDIA Jetson Orin** | ARM64 Cortex-A78AE | ✅ Compatible |
-| **Raspberry Pi 4** | ARM64 Cortex-A72 | ✅ Compatible |
-| **Raspberry Pi 5** | ARM64 Cortex-A76 | ✅ Compatible |
-| **Rock Pi 5** | ARM64 Cortex-A76 | ✅ Compatible |
-| **Orange Pi 5** | ARM64 Cortex-A76 | ✅ Compatible |
-| **AWS Graviton** | ARM64 Neoverse | ✅ Compatible |
-| **Other ARM64 Linux** | ARM64 | ✅ Should work |
+| Platform | Status |
+|----------|--------|
+| **NVIDIA Jetson Nano** | ✅ Tested |
+| **NVIDIA Jetson Xavier/Orin** | ✅ Compatible |
+| **Raspberry Pi 4/5** | ✅ Compatible |
+| **Other ARM64 Linux** | ✅ Should work |
 
 ### AMD64 (x86_64) - Build from Source
 Pre-built packages not provided. Build from source for other architectures:
