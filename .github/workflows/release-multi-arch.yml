@@ -134,8 +134,8 @@ jobs:
   generate-changelog:
     name: Generate Comprehensive Changelog
     runs-on: apple-container
-    needs: [validate-tag, pre-release-tests]
-    if: always() && needs.pre-release-tests.result == 'success'
+    needs: [validate-tag]
+    if: always() && needs.validate-tag.result == 'success'
 
     outputs:
       changelog_path: ${{ steps.generate.outputs.changelog_path }}
