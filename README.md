@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![Release](https://img.shields.io/github/v/release/markfietje/jetson-openclaw-setup?style=for-the-badge&logo=github)](https://github.com/markfietje/jetson-openclaw-setup/releases)
+[![Release](https://img.shields.io/github/v/release/markfietje/openclaw-edge-ai-platform?style=for-the-badge&logo=github)](https://github.com/markfietje/openclaw-edge-ai-platform/releases)
 [![License](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-blue?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-ARM64-9cf?style=for-the-badge&logo=linux)](https://github.com/markfietje/jetson-openclaw-setup/releases)
+[![Platform](https://img.shields.io/badge/platform-ARM64-9cf?style=for-the-badge&logo=linux)](https://github.com/markfietje/openclaw-edge-ai-platform/releases)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
 
 **Production-ready AI assistant infrastructure for Ubuntu/Debian Linux**
@@ -44,8 +44,8 @@ Pre-built packages for edge AI devices:
 Pre-built packages not provided. Build from source for other architectures:
 
 ```bash
-git clone https://github.com/markfietje/jetson-openclaw-setup.git
-cd jetson-openclaw-setup/services/brain-server
+git clone https://github.com/markfietje/openclaw-edge-ai-platform.git
+cd openclaw-edge-ai-platform/services/brain-server
 cargo build --release
 ```
 
@@ -91,12 +91,12 @@ cargo build --release
 
 ```bash
 # Download latest ARM64 packages
-wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/download/brain-server_0.8.1_arm64.deb
-wget https://github.com/markfietje/jetson-openclaw-setup/releases/latest/download/signal-gateway_0.1.1_arm64.deb
+wget https://github.com/markfietje/openclaw-edge-ai-platform/releases/latest/download/brain-server_0.8.5_arm64.deb
+wget https://github.com/markfietje/openclaw-edge-ai-platform/releases/latest/download/signal-gateway_0.8.5_arm64.deb
 
 # Install packages
-sudo dpkg -i brain-server_0.8.1_arm64.deb
-sudo dpkg -i signal-gateway_0.1.1_arm64.deb
+sudo dpkg -i brain-server_0.8.5_arm64.deb
+sudo dpkg -i signal-gateway_0.8.5_arm64.deb
 
 # Services auto-start and enable
 ```
@@ -195,8 +195,8 @@ Good security practices built-in:
 
 ```bash
 # Clone repository
-git clone https://github.com/markfietje/jetson-openclaw-setup.git
-cd jetson-openclaw-setup
+git clone https://github.com/markfietje/openclaw-edge-ai-platform.git
+cd openclaw-edge-ai-platform
 
 # Build for ARM64 (requires cross-compilation tools)
 ./scripts/build-deb-packages.sh
