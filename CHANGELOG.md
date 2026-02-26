@@ -35,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Skipped pre-release tests in release workflow (already run in CI)
 - Uses containers for: binary building, Debian packaging, checksums
 - Fixed changelog script to handle ## prefix
-- Save deb packages to Jetson instead of auto-deploying
-- Fixed debian control files (Version field, removed duplicates, added libssl3)
 
 ---
 
