@@ -11,8 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [0.8.5] - 2026-02-26
 
 ### Infrastructure
-- Fixed debian control file - added Version field for dpkg-deb compatibility
+- Fixed debian control files for dpkg-deb compatibility
+- Added Version field to control files
+- Removed duplicate Maintainer field
+- Added libssl3 dependency
 - Save deb packages to Jetson instead of auto-deploying
+
+### CI/CD
+- Added protobuf-compiler to Pre-Release Tests workflow
 
 ---
 
@@ -29,20 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Skipped pre-release tests in release workflow (already run in CI)
 - Uses containers for: binary building, Debian packaging, checksums
 - Fixed changelog script to handle ## prefix
-
----
-
-## [0.8.3] - 2026-02-26
-
-### Infrastructure
-- Simplified to ARM64-only builds (Jetson Nano focus)
-- All containers now use 4GB memory
-- Removed AMD64 builds - users can build from source
-- macOS runner is stateless (no local dependencies)
-
-### CI/CD
-- Skipped pre-release tests in release workflow (already run in CI)
-- Uses containers for: binary building, Debian packaging, checksums
+- Save deb packages to Jetson instead of auto-deploying
+- Fixed debian control files (Version field, removed duplicates, added libssl3)
 
 ---
 
