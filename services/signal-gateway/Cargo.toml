@@ -1,6 +1,6 @@
 [package]
 name = "signal-gateway"
-version = "0.1.1"
+version = "0.8.6"
 edition = "2021"
 description = "Lightweight Signal daemon for OpenClaw in Rust"
 license = "MIT OR Apache-2.0"
@@ -51,5 +51,5 @@ opt-level = "z"
 
 
 [dependencies.libsqlite3-sys]
-version = "*"
-features = ["bundled"]
+version = "0.30.1"
+features = ["bundled", "bundled-sqlcipher-custom-crypto"]

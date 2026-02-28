@@ -145,7 +145,7 @@ jobs:
           fi
 
           # Generate changelog
-          cat > /tmp/changelog.md << 'EOF'
+          cat > /tmp/changelog.md << EOF
           ## 🚀 Release Notes
 
           **Version:** $VERSION
