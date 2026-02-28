@@ -181,19 +181,19 @@ jobs:
           echo "" >> /tmp/changelog.md
           echo "| Service | Binary |" >> /tmp/changelog.md
           echo "|---------|--------|" >> /tmp/changelog.md
-          echo "| Brain Server | [brain-server-arm64.tar.gz](https://github.com/markfietje/jetson-openclaw-setup/releases/download/$TAG/brain-server-arm64.tar.gz) |" >> /tmp/changelog.md
-          echo "| Signal Gateway | [signal-gateway-arm64.tar.gz](https://github.com/markfietje/jetson-openclaw-setup/releases/download/$TAG/signal-gateway-arm64.tar.gz) |" >> /tmp/changelog.md
+          echo "| Brain Server | [brain-server-arm64.tar.gz](https://github.com/markfietje/openclaw-edge-ai-platform/releases/download/$TAG/brain-server-arm64.tar.gz) |" >> /tmp/changelog.md
+          echo "| Signal Gateway | [signal-gateway-arm64.tar.gz](https://github.com/markfietje/openclaw-edge-ai-platform/releases/download/$TAG/signal-gateway-arm64.tar.gz) |" >> /tmp/changelog.md
 
           echo "" >> /tmp/changelog.md
           echo "---" >> /tmp/changelog.md
           echo "" >> /tmp/changelog.md
           echo "### 🔐 Verification" >> /tmp/changelog.md
           echo "" >> /tmp/changelog.md
-          echo "Checksums file: [SHA256SUMS.txt](https://github.com/markfietje/jetson-openclaw-setup/releases/download/$TAG/SHA256SUMS.txt)" >> /tmp/changelog.md
+          echo "Checksums file: [SHA256SUMS.txt](https://github.com/markfietje/openclaw-edge-ai-platform/releases/download/$TAG/SHA256SUMS.txt)" >> /tmp/changelog.md
           echo "" >> /tmp/changelog.md
           echo "```bash" >> /tmp/changelog.md
           echo "# Verify checksums" >> /tmp/changelog.md
-          echo "wget https://github.com/markfietje/jetson-openclaw-setup/releases/download/$TAG/SHA256SUMS.txt" >> /tmp/changelog.md
+          echo "wget https://github.com/markfietje/openclaw-edge-ai-platform/releases/download/$TAG/SHA256SUMS.txt" >> /tmp/changelog.md
           echo "sha256sum -c SHA256SUMS.txt" >> /tmp/changelog.md
           echo "```" >> /tmp/changelog.md
 

@@ -24,7 +24,7 @@ OUTPUT_FILE="${PROJECT_ROOT}/build/release-notes.md"
 
 # Version information
 VERSION="${1:-}"
-REPO_URL="https://github.com/markfietje/jetson-openclaw-setup"
+REPO_URL="https://github.com/markfietje/openclaw-edge-ai-platform"
 
 # Logging functions
 log_info() {

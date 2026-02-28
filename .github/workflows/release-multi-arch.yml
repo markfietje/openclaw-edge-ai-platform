@@ -554,7 +554,7 @@ jobs:
           echo "═══════════════════════════════════════════════════════"
           echo ""
           echo "Version: ${VERSION}"
-          echo "Release: https://github.com/markfietje/jetson-openclaw-setup/releases/tag/${TAG}"
+          echo "Release: https://github.com/markfietje/openclaw-edge-ai-platform/releases/tag/${TAG}"
           echo ""
           echo "Artifacts:"
           echo "  ARM64 (Jetson Nano):"
