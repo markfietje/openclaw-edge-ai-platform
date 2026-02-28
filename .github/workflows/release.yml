@@ -110,23 +110,6 @@ jobs:
           cargo clippy -- -D warnings
           cargo test --verbose
 
-      - name: Install ARM64 cross-compilation tools
-        run: |
-          echo "🔧 Installing ARM64 cross-compilation tools..."
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-
-      - name: Verify builds
-        run: |
-          echo "🔨 Verifying release builds..."
-
-          # Build x86_64 only (ARM64 is built by auto-deploy workflow)
-          echo "Building x86_64..."
-          cd services/brain-server && cargo build --release
-          cd ../signal-gateway && cargo build --release
-
-          echo "✅ x86_64 builds successful"
-
   generate-changelog:
     name: Generate Changelog
     runs-on: ubuntu-latest
