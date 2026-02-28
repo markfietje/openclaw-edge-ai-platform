@@ -117,24 +117,15 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Verify builds
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
           echo "🔨 Verifying release builds..."
 
-          # Build x86_64
+          # Build x86_64 only (ARM64 is built by auto-deploy workflow)
           echo "Building x86_64..."
           cd services/brain-server && cargo build --release
           cd ../signal-gateway && cargo build --release
 
-          # Build ARM64 (one at a time to avoid memory issues)
-          echo "Building ARM64 brain-server..."
-          cd services/brain-server && cargo build --release --target aarch64-unknown-linux-gnu -j 1
-
-          echo "Building ARM64 signal-gateway..."
-          cd ../signal-gateway && cargo build --release --target aarch64-unknown-linux-gnu -j 1
-
-          echo "✅ All builds successful"
+          echo "✅ x86_64 builds successful (ARM64 built by auto-deploy)"
 
   generate-changelog:
     name: Generate Changelog
