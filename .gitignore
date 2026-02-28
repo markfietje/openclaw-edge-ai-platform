@@ -1,8 +1,9 @@
 # Rust
 target/
-Cargo.lock
 *.pdb
 *.db
+*.deb
+*.tar.gz
 
 # Brain Server
 *.db
