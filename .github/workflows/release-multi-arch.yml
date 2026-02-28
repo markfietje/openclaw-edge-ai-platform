@@ -55,10 +55,10 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           if gh release view "$TAG" &>/dev/null; then
-            echo "::error::Release $TAG already exists"
-            exit 1
+            echo "⚠️ Release $TAG already exists, will update assets"
+          else
+            echo "✅ Tag is available for release"
           fi
-          echo "✅ Tag is available for release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
