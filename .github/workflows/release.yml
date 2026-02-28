@@ -316,8 +316,7 @@ jobs:
     needs:
       - validate-tag
       - generate-changelog
-      - build-release-artifacts
-    if: always() && needs.build-release-artifacts.result == 'success'
+    if: always() && needs.validate-tag.result == 'success' && needs.generate-changelog.result == 'success'
 
     steps:
       - name: Checkout code
