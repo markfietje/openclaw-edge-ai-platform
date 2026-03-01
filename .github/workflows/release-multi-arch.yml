@@ -510,6 +510,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+          ssh-keyscan -H $JETSON_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Save .deb packages to Jetson
         env:

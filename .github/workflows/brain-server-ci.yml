@@ -29,7 +29,7 @@ jobs:
       - name: Check formatting
         run: |
           echo "🎨 Checking code formatting in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace/services/brain-server \
@@ -59,7 +59,7 @@ jobs:
       - name: Run clippy
         run: |
           echo "🔍 Running clippy lints in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \
@@ -97,7 +97,7 @@ jobs:
       - name: Run tests
         run: |
           echo "🧪 Running unit tests in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \
@@ -130,7 +130,7 @@ jobs:
       - name: Generate coverage report
         run: |
           echo "📊 Generating code coverage report in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \
@@ -207,7 +207,7 @@ jobs:
         id: audit
         run: |
           echo "🔒 Running security audit in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \
@@ -351,7 +351,7 @@ jobs:
       - name: Build release binary
         run: |
           echo "🔨 Building release binary for x86_64 in AMD64 Linux container (via Rosetta)..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/amd64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \
@@ -401,7 +401,7 @@ jobs:
       - name: Build for ARM64
         run: |
           echo "🔨 Building release binary for ARM64 in Linux container..."
-          docker run --rm \
+          /usr/local/bin/container run --rm \
             --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v ~/.cargo/registry:/root/.cargo/registry \

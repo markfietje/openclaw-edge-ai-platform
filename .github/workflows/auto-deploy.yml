@@ -54,41 +54,42 @@ env:
 jobs:
   pre-deployment-tests:
     name: Pre-Deployment Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     if: github.event.inputs.skip_tests != 'true'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-
       - name: Test brain-server
-        working-directory: services/brain-server
         run: |
           echo "🧪 Running pre-deployment tests for brain-server..."
-          cargo fmt -- --check
-          cargo clippy -- -D warnings
-          cargo test --verbose
-
-      - name: Install protobuf compiler
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          /usr/local/bin/container run --rm \
+            --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v ~/.cargo/registry:/root/.cargo/registry \
+            -v ~/.cargo/git:/root/.cargo/git \
+            -v "${GITHUB_WORKSPACE}/services/brain-server/target:/workspace/services/brain-server/target" \
+            -w /workspace/services/brain-server \
+            rust:latest \
+            bash -c "cargo fmt -- --check && cargo clippy -- -D warnings && cargo test --verbose"
 
       - name: Test signal-gateway
-        working-directory: services/signal-gateway
         run: |
           echo "🧪 Running pre-deployment tests for signal-gateway..."
-          cargo fmt -- --check
-          cargo clippy -- -D warnings
-          cargo test --verbose
+          /usr/local/bin/container run --rm \
+            --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v ~/.cargo/registry:/root/.cargo/registry \
+            -v ~/.cargo/git:/root/.cargo/git \
+            -v "${GITHUB_WORKSPACE}/services/signal-gateway/target:/workspace/services/signal-gateway/target" \
+            -w /workspace/services/signal-gateway \
+            rust:latest \
+            bash -c "apt-get update -qq && apt-get install -y -qq protobuf-compiler && cargo fmt -- --check && cargo clippy -- -D warnings && cargo test --verbose" 
 
   backup-current-deployment:
     name: Backup Current Deployment
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs: [pre-deployment-tests]
     if: always() && github.event.inputs.skip_tests != 'true' || needs.pre-deployment-tests.result == 'success' || github.event.inputs.skip_tests == 'true'
 
@@ -151,7 +152,7 @@ jobs:
 
   build-and-deploy-brain-server:
     name: Build & Deploy Brain Server
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs: [backup-current-deployment]
     if: github.event.inputs.deploy_brain_server != 'false' || github.event_name == 'push'
 
@@ -162,17 +163,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-
-      - name: Install cross-compilation tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -193,13 +183,17 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-arm64-${{ hashFiles('services/brain-server/**/Cargo.lock') }}
 
       - name: Build for ARM64
-        working-directory: services/brain-server
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
           echo "🔨 Building brain-server for ARM64 (Jetson)..."
-          RUSTFLAGS="-C target-cpu=generic -C opt-level=3" \
-          cargo build --release --target aarch64-unknown-linux-gnu -j 1
+          /usr/local/bin/container run --rm \
+            --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v ~/.cargo/registry:/root/.cargo/registry \
+            -v ~/.cargo/git:/root/.cargo/git \
+            -v "${GITHUB_WORKSPACE}/services/brain-server/target:/workspace/services/brain-server/target" \
+            -w /workspace/services/brain-server \
+            rust:latest \
+            bash -c "rustup target add aarch64-unknown-linux-gnu && RUSTFLAGS='-C target-cpu=generic -C opt-level=3' cargo build --release --target aarch64-unknown-linux-gnu -j 1" 
 
       - name: Verify binary
         working-directory: services/brain-server
@@ -332,7 +326,7 @@ jobs:
 
   build-and-deploy-signal-gateway:
     name: Build & Deploy Signal Gateway
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs: [backup-current-deployment]
     if: github.event.inputs.deploy_signal_gateway != 'false' || github.event_name == 'push'
 
@@ -343,17 +337,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-
-      - name: Install cross-compilation tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -374,12 +357,17 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-arm64-${{ hashFiles('services/signal-gateway/**/Cargo.lock') }}
 
       - name: Build for ARM64
-        working-directory: services/signal-gateway
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
           echo "🔨 Building signal-gateway for ARM64 (Jetson)..."
-          cargo build --release --target aarch64-unknown-linux-gnu
+          /usr/local/bin/container run --rm \
+            --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v ~/.cargo/registry:/root/.cargo/registry \
+            -v ~/.cargo/git:/root/.cargo/git \
+            -v "${GITHUB_WORKSPACE}/services/signal-gateway/target:/workspace/services/signal-gateway/target" \
+            -w /workspace/services/signal-gateway \
+            rust:latest \
+            bash -c "apt-get update -qq && apt-get install -y -qq protobuf-compiler && rustup target add aarch64-unknown-linux-gnu && cargo build --release --target aarch64-unknown-linux-gnu" 
 
       - name: Verify binary
         working-directory: services/signal-gateway
@@ -513,7 +501,7 @@ jobs:
 
   comprehensive-verification:
     name: Comprehensive Verification
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs: [build-and-deploy-brain-server, build-and-deploy-signal-gateway]
     if: always()
 
@@ -616,7 +604,7 @@ jobs:
 
   deployment-report:
     name: Generate Deployment Report
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs:
       [
         build-and-deploy-brain-server,
@@ -664,7 +652,7 @@ jobs:
 
   notify-deployment-status:
     name: Notify Deployment Status
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apple-container]
     needs:
       [
         build-and-deploy-brain-server,
