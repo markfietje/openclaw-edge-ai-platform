@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.0.3] - 2026-03-01
+
+### Network
+- Switched JETSON_HOST in workflows to jetson.local for mDNS resolution
+
+---
+
 ## [0.8.6] - 2026-02-28
 
 ### CI/CD
