@@ -1,90 +1,31 @@
-# Jetson Development Rules
-# Connection command: ssh jetson@jetson
-# This allows SSH access to the Jetson Nano for development and deployment
+# Jetson OpenClaw Rules
 
-## Service Locations
+## Canonical Source Repositories
 
-### Local Development (macOS)
-- Brain Server: ./services/brain-server/
-- Signal Gateway: ./services/signal-gateway/
-- Configs: ./services/openclaw-config/
-- Scripts: ./scripts/
+- OpenClaw source tree for direct code reference:
+  `~/Sites/openclaw-src/`
+- OpenClaw GitHub checkout for troubleshooting and reproducing behavior:
+  `~/Sites/openclaw/`
 
-### Remote Deployment (Jetson)
-- Brain Server binary: /home/jetson/brain-server/
-- Signal Gateway binary: /home/jetson/signal-gateway/
-- Systemd services: /etc/systemd/system/
-- Configs: /etc/signal-gateway/
+## Working Repository
 
-## Deployment Commands
+- Jetson integration/setup work is done in:
+  `~/Sites/jetson-openclaw-setup/`
 
-### Brain Server
-```bash
-# 1. Build locally (cross-compile for ARM64)
-cd services/brain-server
-cargo build --release
+## Jetson Target
 
-# 2. Sync to Jetson
-rsync -avz target/release/brain-server jetson@jetson:/home/jetson/brain-server/
+- SSH access:
+  `ssh jetson@jetson`
 
-# 3. Restart service on Jetson
-ssh jetson@jetson "sudo systemctl restart brain-server"
+## Usage Rules
 
-# 4. Check status
-ssh jetson@jetson "sudo systemctl status brain-server"
-```
+1. Use `~/Sites/openclaw-src/` as the primary source reference for code lookup.
+2. Use `~/Sites/openclaw/` to compare against upstream behavior and reproduce bugs.
+3. Keep Jetson-specific changes isolated to `~/Sites/jetson-openclaw-setup/` unless explicitly syncing fixes upstream.
+4. When troubleshooting, always verify whether the issue reproduces in `~/Sites/openclaw/` before treating it as Jetson-specific.
 
-### Signal Gateway
-```bash
-# 1. Build locally (cross-compile for ARM64)
-cd services/signal-gateway
-cargo build --release
+## Quick Paths
 
-# 2. Sync to Jetson
-rsync -avz target/release/signal-gateway jetson@jetson:/home/jetson/signal-gateway/
-
-# 3. Sync wrapper script
-rsync -avz scripts/signal-gateway-wrapper.sh jetson@jetson:/home/jetson/signal-gateway-wrapper.sh
-ssh jetson@jetson "sudo cp /home/jetson/signal-gateway-wrapper.sh /usr/local/bin/ && sudo chmod +x /usr/local/bin/signal-gateway-wrapper.sh"
-
-# 4. Restart service on Jetson
-ssh jetson@jetson "sudo systemctl restart signal-gateway"
-
-# 5. Check status
-ssh jetson@jetson "sudo systemctl status signal-gateway"
-```
-
-### Full Sync (both services)
-```bash
-# Build both
-./scripts/build-all.sh
-
-# Sync both
-rsync -avz services/brain-server/target/release/brain-server jetson@jetson:/home/jetson/
-rsync -avz services/signal-gateway/target/release/signal-gateway jetson@jetson:/home/jetson/
-
-# Restart both services
-ssh jetson@jetson "sudo systemctl restart brain-server signal-gateway"
-```
-
-## Testing Endpoints
-
-### Brain Server (Jetson)
-- Health: ssh jetson@jetson "curl -s http://localhost:8765/health"
-- Stats: ssh jetson@jetson "curl -s http://localhost:8765/stats | jq ."
-- Search: ssh jetson@jetson "curl -s -X POST http://localhost:8765/search -H 'Content-Type: application/json' -d '{\"query\": \"test\", \"k\": 5}' | jq ."
-- Embeddings: ssh jetson@jetson "curl -s -X POST http://localhost:8765/v1/embeddings -H 'Content-Type: application/json' -d '{\"input\": \"test\"}' | jq '.data[0].embedding | length'"
-
-### Signal Gateway (Jetson)
-- Health: ssh jetson@jetson "curl -s http://localhost:8080/v1/health"
-- Status: ssh jetson@jetson "curl -s http://localhost:8080/v1/status | jq ."
-
-## Development Workflow
-
-1. Edit code locally in services/
-2. Test locally if possible (or use cargo check)
-3. Build for ARM64 release
-4. Sync to Jetson via rsync
-5. Restart systemd service on Jetson
-6. Test via API endpoints
-7. Check logs: ssh jetson@jetson "sudo journalctl -u brain-server -f"
+- Jetson setup repo: `~/Sites/jetson-openclaw-setup/`
+- OpenClaw source: `~/Sites/openclaw-src/`
+- OpenClaw GitHub clone: `~/Sites/openclaw/`

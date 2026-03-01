@@ -64,3 +64,6 @@ Thumbs.db
 *.tmp
 *.bak
 *.backup
+
+# Agent Rules
+*.rules
