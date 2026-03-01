@@ -216,6 +216,11 @@ jobs:
             services/*/target
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
       - name: Run unit tests with coverage
         run: |
           echo "🧪 Running unit tests..."
@@ -268,7 +273,8 @@ jobs:
       - name: Install performance tools
         run: |
           cargo install cargo-criterion wrk
-          sudo apt-get install -y apache2-utils
+          sudo apt-get update
+          sudo apt-get install -y apache2-utils protobuf-compiler
 
       - name: Build release binaries
         run: |
@@ -399,9 +405,20 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          fi
+
       - name: Build optimized binary
         run: |
           echo "🏗️ Building optimized ${{ matrix.artifact_name }}..."
+          if [ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]; then
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+          fi
           RUSTFLAGS="${{ matrix.optimize_flags }}" \
           cargo build --release --target ${{ matrix.target }} --all-features
 
