@@ -18,6 +18,7 @@ pub struct SignalEnvelope {
     pub source_uuid: Option<String>,
     #[serde(rename = "sourceDevice", skip_serializing_if = "Option::is_none")]
     pub source_device: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<i64>,
     #[serde(rename = "dataMessage", skip_serializing_if = "Option::is_none")]
     pub data_message: Option<SignalDataMessage>,
@@ -27,12 +28,17 @@ pub struct SignalEnvelope {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignalDataMessage {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attachments: Option<Vec<SignalAttachment>>,
     #[serde(rename = "groupInfo", skip_serializing_if = "Option::is_none")]
     pub group_info: Option<SignalGroupInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub quote: Option<SignalQuote>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mentions: Option<Vec<SignalMention>>,
 }
 
@@ -40,9 +46,13 @@ pub struct SignalDataMessage {
 pub struct SignalAttachment {
     #[serde(rename = "contentType", skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filename: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<String>,
 }
 
@@ -52,20 +62,27 @@ pub struct SignalGroupInfo {
     pub group_id: Option<String>,
     #[serde(rename = "groupName", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revision: Option<i32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignalQuote {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignalMention {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub length: Option<i32>,
 }
 

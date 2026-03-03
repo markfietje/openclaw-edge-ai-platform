@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Network
 - Switched JETSON_HOST in workflows to jetson.local for mDNS resolution
 
+### Fixed
+- **Signal Gateway field name mismatch** - Changed snake_case to camelCase for OpenClaw compatibility
+  - Fixed fields: `sourceNumber`, `sourceUuid`, `sourceDevice`, `dataMessage`, `groupInfo`, `contentType`, `groupId`, `groupName`
+  - Resolved issue where Signal messages were received but sessions not created
+  - Related: [openclaw/openclaw#24490](https://github.com/openclaw/openclaw/issues/24490)
+
 ---
 
 ## [0.8.6] - 2026-02-28
